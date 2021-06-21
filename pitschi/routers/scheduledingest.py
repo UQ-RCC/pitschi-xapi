@@ -32,7 +32,8 @@ def check_all_files_in_dataset(db, dataset, project, logger):
     file_items = { file.path:file for file in dataset.files }
     qcollection = project.collection.strip().split("-")[-1]
     # do a walk over: /prefix/QCollection/dataset
-    dataset_root = f"{config.get('rdm', 'prefix', default='/data')}/{qcollection}/{dataset.relpathfromrootcollection}"
+    _relpathfromrootcollection = dataset.relpathfromrootcollection.replace("\\", "/")
+    dataset_root = f"{config.get('rdm', 'prefix', default='/data')}/{qcollection}/{_relpathfromrootcollection}"
     ignore_folders = []
     for root, dirs, files in os.walk(dataset_root, topdown = True):
         # go to clowder and create those
@@ -125,7 +126,8 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
     logger.debug(f"File items in db: {file_items}")
     qcollection = project.collection.strip().split("-")[-1]
     # do a walk over: /prefix/QCollection/dataset
-    dataset_root = f"{config.get('rdm', 'prefix', default='/data')}/{qcollection}/{dataset.relpathfromrootcollection}"
+    _relpathfromrootcollection = dataset.relpathfromrootcollection.replace("\\", "/")
+    dataset_root = f"{config.get('rdm', 'prefix', default='/data')}/{qcollection}/{_relpathfromrootcollection}"
     folders = {}
     ignore_folders = []
     _ds_folders = clowderful.get_dataset_folders(_clowder_key, _clowder_api_url, dataset.datasetid)
@@ -143,7 +145,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
             for _ds_folder in _ds_folders:
                 if _ds_folder.get('name') == _current_dir_relativepath:
                     logger.debug (f"\nFolder {_current_dir_relativepath} exists")
-                    folders[_current_dir_fullpath] = _folder['id']
+                    folders[_current_dir_fullpath] = _ds_folder.get('id')
                     _exist = True
                     break
             if not _exist:
@@ -236,8 +238,9 @@ def send_email(datasetinfo, result, messages):
         title = f"Successully ingested dataset"
         to_address = datasetinfo.user.email
         pitschi_url = f"{config.get('clowder', 'url')}/datasets/{datasetinfo.datasetid}?space={datasetinfo.space}"
-        cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{datasetinfo.project.collection}/{datasetinfo.relpathfromrootcollection}"
-        samba_url=f"smb://shares01.rdm.uq.edu.au/{datasetinfo.project.collection}/{datasetinfo.relpathfromrootcollection}"
+        _relpathfromrootcollection = datasetinfo.relpathfromrootcollection.replace("\\", "/")
+        cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
+        samba_url=f"smb://shares01.rdm.uq.edu.au/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
         contents = f"""
         <html>
             <head></head>
@@ -252,8 +255,8 @@ def send_email(datasetinfo, result, messages):
                         <li><b>Windows</b> Enter this location into File Explorer: <b>{datasetinfo.networkpath}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
                         <li><b>MacOS</b> Go to Finder and then on the menu Go-> Connect to Server.... Enter this text: <b>{samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
                         <li><b>Linux</b> Enter this location into File Manager (Caja, Nautilus, etc): <b>{samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                        <li><b>CVL</b> Go to collection: <b>{datasetinfo.project.collection.strip().split("-")[-1]}</b> and then {datasetinfo.relpathfromrootcollection}</li>
-                        <li><b>Image Processing Portal</b> <a href="https://ipp.rcc.uq.edu.au/?component=filesmanager&relpath={datasetinfo.project.collection.strip().split("-")[-1]}/{datasetinfo.relpathfromrootcollection}">here</a></li>
+                        <li><b>CVL</b> Go to collection: <b>{datasetinfo.project.collection.strip().split("-")[-1]}</b> and then {_relpathfromrootcollection}</li>
+                        <li><b>Image Processing Portal</b> <a href="https://ipp.rcc.uq.edu.au/?component=filesmanager&relpath={datasetinfo.project.collection.strip().split("-")[-1]}/{_relpathfromrootcollection}">here</a></li>
                     </ul>
                 </p>
                 Regards,<br />
