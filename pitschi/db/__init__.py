@@ -19,5 +19,3 @@ def get_db() -> Iterator[Session]:
     yield from _get_fastapi_sessionmaker().get_db()
 
 
-# create admin if not exists
-crud.create_admin_if_not_exist(next(_get_fastapi_sessionmaker().get_db()))

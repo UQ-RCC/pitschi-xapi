@@ -19,6 +19,14 @@ database_uri = (f"{config.get('database', 'type')}://"
                 f"{config.get('database', 'name')}")
 sessionmaker = FastAPISessionMaker(database_uri)
 
+
+@router.on_event("startup")
+@repeat_every(seconds=5, wait_first=True, logger=logger, max_repetitions=1)
+async def init_admin_user() -> None:
+    with sessionmaker.context_session() as db:
+        pdb.crud.create_admin_if_not_exist(db)
+
+
 # every 2 days or so
 # sync systems
 # sync projects
