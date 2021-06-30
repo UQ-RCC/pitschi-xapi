@@ -21,7 +21,7 @@ sessionmaker = FastAPISessionMaker(database_uri)
 
 
 @router.on_event("startup")
-@repeat_every(seconds=5, wait_first=True, logger=logger, max_repetitions=1)
+@repeat_every(seconds=15, wait_first=True, logger=logger, max_repetitions=1)
 async def init_admin_user() -> None:
     with sessionmaker.context_session() as db:
         pdb.crud.create_admin_if_not_exist(db)
