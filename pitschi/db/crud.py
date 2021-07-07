@@ -115,6 +115,41 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
         db.flush()
         dataset.files.append(afile)
     db.commit()
+    # send email
+    if dataset.mode == models.Mode.imported and dataset.status == models.Status.success:
+        # send email
+        logger.debug("Send email about the import")
+        _dataset_info = summarize_dataset_info(db, datasetModel.id)
+        if _dataset_info:
+            _title = f"Successully imported dataset to RDM"
+            _to_address = _dataset_info.user.email
+            _cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
+            _samba_url=f"smb://shares01.rdm.uq.edu.au/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
+            _contents = f"""
+                        <html>
+                            <head></head>
+                            <body>
+                                <p>Dear {_dataset_info.user.name},<br /></p>
+                                <p>Pitschi has successfully imported dataset from {_dataset_info.system.name} into RDM.</p>
+
+                                <p>You can view the dataset using the following systems (please allow time for synchronization):</p>
+                                    <ul>
+                                        <li><b>Cloud RDM</b> <a href="{_cloud_rdm_url}">here</a>.</li>
+                                        <li><b>Windows</b> Enter this text into File Explorer: <b>{_dataset_info.networkpath}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
+                                        <li><b>MacOS</b> Go to Finder and then on the menu Go-> Connect to Server.... Enter this text: <b>{_samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
+                                        <li><b>Linux</b> Enter this text into File Manager (Caja, Nautilus, etc): <b>{_samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
+                                        <li><b>CVL</b> Look for collection: <b>{_dataset_info.project.collection.strip().split("-")[-1]}</b> and then {_dataset_info.relpathfromrootcollection}</li>
+                                        <li><b>Image Processing Portal</b> <a href="https://ipp.rcc.uq.edu.au/?component=filesmanager&relpath={_dataset_info.project.collection.strip().split("-")[-1]}/{_dataset_info.relpathfromrootcollection}">here</a></li>
+                                    </ul>
+                                </p>
+                                You will receive another email once the dataset has been successfully ingested into Pitschi.
+                                <br />
+                                Regards,<br />
+                                Pitschi Team
+                            </body>
+                        </html>
+                        """
+            mail.send_mail(_to_address, _title, _contents)        
     return datasetModel
 
 
