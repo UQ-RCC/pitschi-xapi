@@ -30,11 +30,22 @@ def extract_roles_users():
 
 def list_spaces(key, api_url, canedit=True):
     """
-
+    list spaces, be careful of limit
     """
     url = f"{api_url}/spaces"
     if canedit:
         url = f"{url}/canEdit"
+    return _get(url, key)
+
+def get_spaces(key, api_url, name, canedit=True):
+    """
+    get spaces with given name
+    """
+    url = f"{api_url}/spaces"
+    if canedit:
+        url = f"{url}/canEdit"
+    else:
+        url = f"{url}?name={name}&limit=100"
     return _get(url, key)
 
 ##################### dataset ###########################

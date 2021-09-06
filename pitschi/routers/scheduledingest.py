@@ -76,7 +76,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
     found = False
     if not dataset.space:
         logger.debug(f"finding space")
-        res = clowderful.list_spaces(_clowder_key, _clowder_api_url, False)
+        res = clowderful.get_spaces(_clowder_key, _clowder_api_url, project.name, False)
         if res.ok:
             for _space in res.json():
                 if _space.get('name') == project.name:
