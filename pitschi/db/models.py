@@ -131,3 +131,9 @@ class Booking(Base):
             ['userproject.username', 'userproject.projectid'],
         ),
     )
+
+
+class Collection(Base):
+    __tablename__ = 'collection'
+    name = Column(String, primary_key=True, index=True, nullable=False)
+    fullname = Column(String, primary_key=False, index=False, nullable=True)
