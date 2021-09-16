@@ -106,8 +106,14 @@ async def sync_ppms_bookings() -> None:
             if not _system:
                 # if no system exists --> maybe weekly task does not update yet
                 systems = get_systems()
+                if _system_name in systems:
+                    _system = pdb.crud.create_system(db, pdb.schemas.System( \
+                                                    id=systems.get(_system_name).get('systemid'), \
+                                                    name=systems.get(_system_name).get('systemname'), \
+                                                    type=systems.get(_system_name).get('systemtype') \
+                                                ))
                 for system in systems:
-                    if system.get('systemname') == _system_name:
+                    if system == _system_name:
                         _system = pdb.crud.create_system(db, pdb.schemas.System( \
                                                         id=systems.get(system).get('systemid'), \
                                                         name=systems.get(system).get('systemname'), \
