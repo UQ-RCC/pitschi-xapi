@@ -112,13 +112,6 @@ async def sync_ppms_bookings() -> None:
                                                     name=systems.get(_system_name).get('systemname'), \
                                                     type=systems.get(_system_name).get('systemtype') \
                                                 ))
-                for system in systems:
-                    if system == _system_name:
-                        _system = pdb.crud.create_system(db, pdb.schemas.System( \
-                                                        id=systems.get(system).get('systemid'), \
-                                                        name=systems.get(system).get('systemname'), \
-                                                        type=systems.get(system).get('systemtype') \
-                                                    ))
             logger.debug(f"systemid:{_system.id}")
             _a_booking_object.systemid = _system.id
             _systems_with_bookings.add(_system.id)
