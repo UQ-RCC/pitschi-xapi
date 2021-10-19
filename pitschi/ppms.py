@@ -17,6 +17,7 @@ def get_ppms_user(login):
         if response.status_code == 204:
             raise Exception('Not found')
         else:
+            logger.debug("Response: {response}")
             return response.json(strict=False)
     else:
         raise Exception('Not found')

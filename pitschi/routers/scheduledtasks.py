@@ -69,13 +69,17 @@ async def sync_ppms_weekly() -> None:
             _project_members = get_project_members(_project_in_db.id)
             logger.debug(f"project {_project_in_db.id} users:{_project_members}")
             for _project_member in _project_members:
-                _project_user = _project_member.get("login")
+                _project_user = _project_member.get("login").strip()
                 logger.debug(f"Checking project user:{_project_user}")
+                if not _project_user:
+                    logger.debug(f"{_project_user} is empty. ignore")
+                    continue
                 _db_user = pdb.crud.get_ppms_user(db, _project_user)
                 if not _db_user:
                     _user_info = get_ppms_user(_project_user)
                     _user_schema = pdb.schemas.User(\
                                         username = _user_info.get('login'),\
+                                        userid = _project_member.get("id"),\
                                         name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
                                         email = _user_info.get('email') )
                     logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
@@ -84,6 +88,9 @@ async def sync_ppms_weekly() -> None:
                     pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
                                                     username = _user_info.get('login'),\
                                                     projectid = _project_in_db.id ) )
+                if not _db_user.userid:
+                    # update it
+                    pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
         # db.close()
 
 
@@ -183,13 +190,17 @@ async def sync_ppms_bookings() -> None:
                     _project_members = get_project_members(_project_in_db.id)
                     logger.debug(f"project {_project_in_db.id} users:{_project_members}")
                     for _project_member in _project_members:
-                        _project_user = _project_member.get("login")
+                        _project_user = _project_member.get("login").strip()
                         logger.debug(f"Checking project user:{_project_user}")
+                        if not _project_user:
+                            logger.debug(f"{_project_user} is empty. ignore")
+                            continue
                         _db_user = pdb.crud.get_ppms_user(db, _project_user)
                         if not _db_user:
                             _user_info = get_ppms_user(_project_user)
                             _user_schema = pdb.schemas.User(\
                                             username = _user_info.get('login'),\
+                                            userid = _project_member.get("id"),\
                                             name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
                                             email = _user_info.get('email') \
                                         )
@@ -199,6 +210,8 @@ async def sync_ppms_bookings() -> None:
                             pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
                                                             username = _user_info.get('login'),\
                                                             projectid = _project_in_db.id ) )
+                        if not _db_user.userid:
+                            pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
                         if _db_user.email == _system_booking.get('userEmail'):
                             if _booking_objects[_system_booking_id].assistant.strip() == '':
                                 _booking_objects[_system_booking_id].username = _db_user.username

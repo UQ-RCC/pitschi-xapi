@@ -311,6 +311,13 @@ def create_ppms_user(db: Session, auser: schemas.User):
         db.refresh(user)
     return user
     
+def update_ppms_user_id(db: Session, userlogin: str, uid: int):
+    _ppms_user = get_ppms_user(db, userlogin)
+    if _ppms_user:
+        _ppms_user.userid = uid
+        db.flush()
+        db.commit()
+
 
 def get_booking(db: Session, bookingid: int):
     return db.query(models.Booking).\
