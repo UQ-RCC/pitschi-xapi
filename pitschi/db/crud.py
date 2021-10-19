@@ -293,6 +293,10 @@ def get_ppms_user(db: Session, username: str):
     return db.query(models.User).\
             filter(models.User.username == username).first()
 
+def get_ppms_user_by_uid(db: Session, uid: int):
+    return db.query(models.User).\
+            filter(models.User.userid == uid).first()
+
 def get_ppms_user_by_email(db: Session, email: str):
     return db.query(models.User).\
             filter(models.User.email == email).first()
@@ -303,8 +307,8 @@ def create_ppms_user(db: Session, auser: schemas.User):
         user = models.User(**auser.dict())
         db.add(user)
         db.flush()
-        db.refresh(user)
         db.commit()
+        db.refresh(user)
     return user
     
 

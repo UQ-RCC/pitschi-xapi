@@ -4,7 +4,7 @@ import datetime, pytz
 from fastapi import APIRouter, Depends, status
 from fastapi_utils.tasks import repeat_every
 import pitschi.db as pdb
-from pitschi.ppms import get_ppms_user, get_daily_bookings_one_system, get_daily_bookings, get_systems, get_projects, get_project_user, get_rdm_collection
+from pitschi.ppms import get_ppms_user, get_daily_bookings_one_system, get_daily_bookings, get_systems, get_projects, get_system_rights, get_rdm_collection, get_project_members, get_booking_details
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -48,18 +48,42 @@ async def sync_ppms_weekly() -> None:
         projects = get_projects()
         for project in projects:
             # exists in db already
-            if pdb.crud.get_project(db, project.get('ProjectRef')):
-                continue
-            # note that this informatio nis already available in the get projects query --> quick
-            ### add project
-            _projectSchema = pdb.schemas.Project(\
-                                id = project.get('ProjectRef'),\
-                                name = project.get('ProjectName'),\
-                                active = bool(project.get('Active')),\
-                                type = project.get('ProjectType'),\
-                                phase = project.get('Phase'),\
-                                description = project.get('Descr'))
-            pdb.crud.create_project(db, _projectSchema)
+            _project_in_db = pdb.crud.get_project(db, project.get('ProjectRef'))
+            if not _project_in_db:
+                # note that this informatio nis already available in the get projects query --> quick
+                ### add project
+                _projectSchema = pdb.schemas.Project(\
+                                    id = project.get('ProjectRef'),\
+                                    name = project.get('ProjectName'),\
+                                    active = bool(project.get('Active')),\
+                                    type = project.get('ProjectType'),\
+                                    phase = project.get('Phase'),\
+                                    description = project.get('Descr'))
+                pdb.crud.create_project(db, _projectSchema)
+            ###### get more information
+            if not _project_in_db.collection:
+                _q_collection = get_rdm_collection(config.get('ppms', 'coreid'), _project_in_db.id)
+                if _q_collection:
+                    pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
+            # now with project users
+            _project_members = get_project_members(_project_in_db.id)
+            logger.debug(f"project {_project_in_db.id} users:{_project_members}")
+            for _project_member in _project_members:
+                _project_user = _project_member.get("login")
+                logger.debug(f"Checking project user:{_project_user}")
+                _db_user = pdb.crud.get_ppms_user(db, _project_user)
+                if not _db_user:
+                    _user_info = get_ppms_user(_project_user)
+                    _user_schema = pdb.schemas.User(\
+                                        username = _user_info.get('login'),\
+                                        name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
+                                        email = _user_info.get('email') )
+                    logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
+                    _db_user = pdb.crud.create_ppms_user(db, _user_schema)
+                    logger.debug(f"Create user project...")
+                    pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
+                                                    username = _user_info.get('login'),\
+                                                    projectid = _project_in_db.id ) )
         # db.close()
 
 
@@ -155,8 +179,12 @@ async def sync_ppms_bookings() -> None:
                         if _q_collection:
                             pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
                     # now with project users
-                    _project_users = get_project_user(_project_in_db.id)
-                    for _project_user in _project_users:
+                    # _project_users = get_project_user(_project_in_db.id)
+                    _project_members = get_project_members(_project_in_db.id)
+                    logger.debug(f"project {_project_in_db.id} users:{_project_members}")
+                    for _project_member in _project_members:
+                        _project_user = _project_member.get("login")
+                        logger.debug(f"Checking project user:{_project_user}")
                         _db_user = pdb.crud.get_ppms_user(db, _project_user)
                         if not _db_user:
                             _user_info = get_ppms_user(_project_user)
@@ -165,12 +193,37 @@ async def sync_ppms_bookings() -> None:
                                             name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
                                             email = _user_info.get('email') \
                                         )
+                            logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
                             _db_user = pdb.crud.create_ppms_user(db, _user_schema)
+                            logger.debug(f"Create user project...")
                             pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
                                                             username = _user_info.get('login'),\
                                                             projectid = _project_in_db.id ) )
                         if _db_user.email == _system_booking.get('userEmail'):
-                            _booking_objects[_system_booking_id].username = _db_user.username
+                            if _booking_objects[_system_booking_id].assistant.strip() == '':
+                                _booking_objects[_system_booking_id].username = _db_user.username
+                            else:
+                                ### this session requires assistance
+                                # check if this user can operate the machine 
+                                _system_rights = get_system_rights(_sys_id)
+                                _user_system_right = _system_rights.get(_db_user.username)
+                                if _user_system_right in ("A", "S"):
+                                    _booking_objects[_system_booking_id].username = _db_user.username
+                                else:
+                                    #### get the assistance login
+                                    _a_booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
+                                    if _a_booking_details:
+                                        _assistance_id = int(_a_booking_details.get("assistantId"))
+                                        # now translate this id to user
+                                        _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
+                                        if _assistant_in_db:
+                                            _booking_objects[_system_booking_id].username = _assistant_in_db.username
+                                        else:
+                                            ### look in ppms
+                                            logger.debug(f"Need to find user with id: {_assistance_id}")
+                                    else:
+                                        logger.error(f"Booking details of booking {_system_booking_id} returns nothing. Username of this booking is null")
+
 
         # create bookings
         [ pdb.crud.create_booking(db, _booking_object) for _booking_object in _booking_objects.values() ]

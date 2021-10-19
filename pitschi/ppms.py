@@ -23,7 +23,7 @@ def get_ppms_user(login):
 
 
 def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.date):
-    logger.debug("Querying booking of a certain date")
+    logger.debug("@get_daily_bookings_one_system: Querying booking of a certain date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
     payload=f"apikey={config.get('ppms', 'api2_key')}&action=GetSessionsList&filter=day&systemid={systemid}&date={datestr}&coreid={coreid}"
@@ -39,7 +39,7 @@ def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.dat
     return []
 
 def get_daily_bookings(coreid:int , date: datetime.date):
-    logger.debug("Querying booking of a certain date")
+    logger.debug("@get_daily_bookings: Querying booking of a certain date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
     payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'booking_query')}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
@@ -53,6 +53,23 @@ def get_daily_bookings(coreid:int , date: datetime.date):
         else:
             return response.json(strict=False)
     return []
+
+
+def get_booking_details(coreid:int , sessionid: int):
+    logger.debug("Querying booking details")
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    payload=f"apikey={config.get('ppms', 'api2_key')}&action=GetSessionDetails&sessionid={sessionid}&coreid={coreid}"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code == 204:
+            return []
+        else:
+            return response.json(strict=False)
+    return []
+
 
 
 def get_systems():
@@ -80,6 +97,27 @@ def get_systems():
                     systems[_systemname] = {'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname}
             return systems
     return {}
+
+
+def get_system_rights(systemid: int):
+    logger.debug("Querying systems")
+    url = f"{config.get('ppms', 'ppms_url')}pumapi/"
+    payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getsysrights&id={systemid}"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code == 204:
+            return {}
+        else:
+            # format is in mode:name\n
+            _system_rights_text = response.text.strip()
+            _lines = _system_rights_text.split('\n')
+            _permissions = { _line.split(":")[1]:_line.split(":")[0] for _line in _lines }
+            return _permissions
+    return {}
+
 
 def get_projects():
     logger.debug("Querying projects")
@@ -115,7 +153,33 @@ def get_project_user(projectid: int):
     else:
         return []
 
-
+def get_project_members(projectid: int):
+    """
+    Similar to project_user but with user id as well
+    """
+    logger.debug("Querying project user")
+    url = f"{config.get('ppms', 'ppms_url')}pumapi/"
+    payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojectmember&projectid={projectid}"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code == 204:
+            return []
+        else:
+            response_txt = response.text
+            _csv_reader = csv.reader(response_txt.split('\n'), delimiter=',')
+            _csv_reader.__next__()
+            members = []
+            for row in _csv_reader:
+                if(len(row) > 8):
+                    _userid = int(row[1])
+                    _userlogin = row[8]
+                    members.append({'id': _userid, 'login': _userlogin})
+            return members
+    else:
+        return []
     
 def get_rdm_collection(coreid: int, projectid: int):
     url = f"{config.get('ppms', 'ppms_url')}API2/"
