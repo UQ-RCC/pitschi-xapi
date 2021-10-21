@@ -3,7 +3,7 @@ import logging
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import clowder, ppms, user, scheduledtasks, scheduledingest
+from .routers import clowder, ppms, user, scheduledingest, sync_ppms_bookings, sync_ppms_projects
 import pitschi.config as config
 from logging.handlers import TimedRotatingFileHandler
 
@@ -57,13 +57,21 @@ pitschixapi.include_router(
 )
 
 # scheduledtasks
-if config.get('ppms', 'syncing_ppms', default = "no") == "yes":
-    logger.debug("Syncing on")
+if config.get('ppms', 'syncing_ppms_project', default = "no") == "yes":
+    logger.debug("Syncing project on")
     pitschixapi.include_router(
-        scheduledtasks.router
+        sync_ppms_projects.router
     )
 else:
-    logger.debug("Syncing with ppms off")
+    logger.debug("Syncing projects with ppms off")
+
+if config.get('ppms', 'syncing_ppms_bookings', default = "no") == "yes":
+    logger.debug("Syncing bookings on")
+    pitschixapi.include_router(
+        sync_ppms_bookings.router
+    )
+else:
+    logger.debug("Syncing bookings with ppms off")
     
 if config.get('clowder', 'ingesting', default = "yes") == "yes":
     logger.debug("ingsting on")
