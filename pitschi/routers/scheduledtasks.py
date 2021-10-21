@@ -44,8 +44,8 @@ async def sync_ppms_weekly() -> None:
                                                     name=systems.get(system).get('systemname'), \
                                                     type=systems.get(system).get('systemtype') \
                                                 ))
-        #now get projects
         projects = get_projects()
+        #now get projects
         for project in projects:
             # exists in db already
             _project_in_db = pdb.crud.get_project(db, project.get('ProjectRef'))
@@ -213,7 +213,7 @@ async def sync_ppms_bookings() -> None:
                         if not _db_user.userid:
                             pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
                         if _db_user.email == _system_booking.get('userEmail'):
-                            if _booking_objects[_system_booking_id].assistant.strip() == '':
+                            if _booking_objects[_system_booking_id].get('assistant').strip() == '':
                                 _booking_objects[_system_booking_id].username = _db_user.username
                             else:
                                 ### this session requires assistance
@@ -233,7 +233,7 @@ async def sync_ppms_bookings() -> None:
                                             _booking_objects[_system_booking_id].username = _assistant_in_db.username
                                         else:
                                             ### look in ppms
-                                            logger.debug(f"Need to find user with id: {_assistance_id}")
+                                            logger.debug(f">>>>>>>>>>>>>Need to find user with id: {_assistance_id}")
                                     else:
                                         logger.error(f"Booking details of booking {_system_booking_id} returns nothing. Username of this booking is null")
 
