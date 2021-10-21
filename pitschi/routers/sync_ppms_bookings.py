@@ -151,8 +151,8 @@ async def sync_ppms_bookings() -> None:
                                 else:
                                     #### get the assistance login
                                     _a_booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
-                                    if _a_booking_details:
-                                        _assistance_id = int(_a_booking_details.get("assistantId"))
+                                    if len(_a_booking_details) > 0:
+                                        _assistance_id = int(_a_booking_details[0].get("assistantId"))
                                         # now translate this id to user
                                         _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
                                         if _assistant_in_db:
