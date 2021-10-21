@@ -139,7 +139,7 @@ async def sync_ppms_bookings() -> None:
                         if not _db_user.userid:
                             pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
                         if _db_user.email == _system_booking.get('userEmail'):
-                            if _booking_objects[_system_booking_id].get('assistant').strip() == '':
+                            if _system_booking.get('assistant').strip() == '':
                                 _booking_objects[_system_booking_id].username = _db_user.username
                             else:
                                 ### this session requires assistance
