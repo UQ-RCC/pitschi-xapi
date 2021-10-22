@@ -47,6 +47,8 @@ async def sync_ppms_weekly() -> None:
         projects = get_projects()
         #now get projects
         for project in projects:
+            if int(project.get('ProjectRef')) < int(config.get('ppms', 'project_starting_ref', default=0)):
+                continue
             # exists in db already
             _project_in_db = pdb.crud.get_project(db, project.get('ProjectRef'))
             if not _project_in_db:
