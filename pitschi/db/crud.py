@@ -332,6 +332,7 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
     # this is all because I cannot do a join properlly using sqlalchemy
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
+                filter(models.Booking.username != None). \
                 filter(models.Booking.bookingdate == bookingdate). \
                 filter(models.Booking.cancelled == False).all()
     for booking in bookings:
