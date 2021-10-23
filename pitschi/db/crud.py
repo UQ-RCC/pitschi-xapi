@@ -333,10 +333,10 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
                 filter(models.Booking.bookingdate == bookingdate). \
-                filter(models.Booking.projectid != None). \
                 filter(models.Booking.cancelled == False).all()
     for booking in bookings:
-        booking.project = get_project(db, booking.projectid)
+        if booking.projectid:
+            booking.project = get_project(db, booking.projectid)
     return bookings
 
 
@@ -344,11 +344,11 @@ def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate:
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
                 filter(models.Booking.username == username). \
-                filter(models.Booking.projectid != None). \
                 filter(models.Booking.bookingdate == bookingdate). \
                 filter(models.Booking.cancelled == False).all()
     for booking in bookings:
-        booking.project = get_project(db, booking.projectid)
+        if booking.projectid:
+            booking.project = get_project(db, booking.projectid)
     return bookings
 
 
