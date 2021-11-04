@@ -27,9 +27,10 @@ sessionmaker = FastAPISessionMaker(database_uri)
 def check_all_files_in_dataset(db, dataset, project, logger):
     """
     Checks whether all the files in the given dataset are there
+    All files paths will be turned to lower case as Windows does not differenate cases in path
     """
     logger.debug(f"@check-dataset: Start checking datataset {dataset.name} with {len(dataset.files)} files")
-    file_items = { file.path:file for file in dataset.files }
+    file_items = { file.path.lower():file for file in dataset.files }
     qcollection = project.collection.strip().split("-")[-1]
     # do a walk over: /prefix/QCollection/dataset
     _relpathfromrootcollection = dataset.relpathfromrootcollection.replace("\\", "/")
@@ -58,7 +59,7 @@ def check_all_files_in_dataset(db, dataset, project, logger):
                 # ingest
                 try:
                     logger.debug(f"Removing fullpath: {_file_fullpath} rel path: {_file_rel_path}")
-                    file_items.pop(_file_rel_path)
+                    file_items.pop(_file_rel_path.lower())
                 except: 
                     pass
     logger.debug(f"Left over file items: {file_items}")
