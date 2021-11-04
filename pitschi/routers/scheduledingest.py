@@ -57,9 +57,10 @@ def check_all_files_in_dataset(db, dataset, project, logger):
                 else:
                     _file_rel_path = _file_fullpath.replace(f"{dataset_root}/", "").replace("/", "\\")    
                 # ingest
+                _file_rel_path = _file_rel_path.lower()
                 try:
                     logger.debug(f"Removing fullpath: {_file_fullpath} rel path: {_file_rel_path}")
-                    file_items.pop(_file_rel_path.lower())
+                    file_items.pop(_file_rel_path)
                 except: 
                     pass
     logger.debug(f"Left over file items: {file_items}")
@@ -123,7 +124,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
 
     # all files items
     logger.debug("Space and dataset found. Now ingesting files")
-    file_items = { file.path:file for file in dataset.files }
+    file_items = { file.path.lower():file for file in dataset.files }
     logger.debug(f"File items in db: {file_items}")
     qcollection = project.collection.strip().split("-")[-1]
     # do a walk over: /prefix/QCollection/dataset
@@ -173,6 +174,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                 else:
                     _file_rel_path = _file_fullpath.replace(f"{dataset_root}/", "").replace("/", "\\")    
                 # ingest
+                _file_rel_path = _file_rel_path.lower()
                 _to_be_ingested = True
                 _file_object = None
                 if _file_rel_path in file_items:
