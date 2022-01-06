@@ -77,6 +77,7 @@ class Booking(BaseModel):
     cancelled: bool = False
     status: Optional[str] = None
     username: Optional[str] = None
+    assistant: Optional[str] = None
     projectid: Optional[int] = None
     systemid: Optional[int] = None
     class Config:

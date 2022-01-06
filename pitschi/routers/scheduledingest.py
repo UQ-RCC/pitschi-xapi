@@ -236,14 +236,17 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
 
 
 
-def send_email(datasetinfo, result, messages):
+def send_email(db, datasetinfo, result, messages):
     if result:
         title = f"Successully ingested dataset"
         to_address = datasetinfo.user.email
+        # if assistant is present, then sent email to assisant
+        if datasetinfo.booking and datasetinfo.booking.assistant:
+            to_address = pdb.crud.get_ppms_user(db, datasetinfo.booking.assistant)
         pitschi_url = f"{config.get('clowder', 'url')}/datasets/{datasetinfo.datasetid}?space={datasetinfo.space}"
         _relpathfromrootcollection = datasetinfo.relpathfromrootcollection.replace("\\", "/")
         cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
-        samba_url=f"smb://shares01.rdm.uq.edu.au/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
+        samba_url=f"smb://data.qbi.uq.edu.au/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
         contents = f"""
         <html>
             <head></head>
@@ -335,7 +338,7 @@ async def ingest() -> None:
                     _dataset_info = pdb.crud.summarize_dataset_info(db, _dataset.id)
                     if _dataset_info:
                         logger.debug(f"Datasetinto {_dataset_info}")
-                        send_email(_dataset_info, result, messages)
+                        send_email(db, _dataset_info, result, messages)
                     if result:
                         # success
                         pdb.crud.update_dataset_mode_status(db, _dataset.id, pdb.models.Mode.ingested, pdb.models.Status.success)

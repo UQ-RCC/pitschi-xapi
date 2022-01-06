@@ -121,18 +121,21 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
         logger.debug("Send email about the import")
         _dataset_info = summarize_dataset_info(db, datasetModel.id)
         if _dataset_info:
-            send_import_email(_dataset_info)
+            send_import_email(db, _dataset_info)
     return datasetModel
 
 
-def send_import_email(_dataset_info):
+def send_import_email(db, _dataset_info):
     """
     send an import email
     """
     _title = f"Successully imported dataset to RDM"
     _to_address = _dataset_info.user.email
+    # if this dataset is a result of a assistance
+    if _dataset_info.booking and _dataset_info.booking.assistant:
+        _to_address = get_ppms_user(db, _dataset_info.booking.assistant)
     _cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
-    _samba_url=f"smb://shares01.rdm.uq.edu.au/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
+    _samba_url=f"smb://data.qbi.uq.edu.au/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
     _contents = f"""
                 <html>
                     <head></head>
@@ -263,7 +266,7 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
             logger.debug("Send email about the import")
             _dataset_info = summarize_dataset_info(db, datasetid)
             if _dataset_info:
-                send_import_email(_dataset_info)
+                send_import_email(db, _dataset_info)
 
         
 ############# ppms
@@ -344,7 +347,7 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
 def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate: datetime.date, username: str):
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
-                filter(models.Booking.username == username). \
+                filter(or_(models.Booking.username == username, models.Booking.assistant == username)). \
                 filter(models.Booking.bookingdate == bookingdate). \
                 filter(models.Booking.cancelled == False).all()
     for booking in bookings:

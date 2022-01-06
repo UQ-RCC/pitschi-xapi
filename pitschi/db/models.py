@@ -122,6 +122,7 @@ class Booking(Base):
     datasets = relationship("Dataset", back_populates="booking")
 
     username = Column(String, primary_key=False, index=False, nullable=True)
+    assistant = Column(String, primary_key=False, index=False, nullable=True)
     projectid = Column(Integer, primary_key=False, index=False, nullable=True)
     
     userproject = relationship("UserProject", back_populates="bookings")
