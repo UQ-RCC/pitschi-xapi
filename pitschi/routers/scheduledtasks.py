@@ -197,6 +197,7 @@ async def sync_ppms_bookings() -> None:
                             continue
                         _db_user = pdb.crud.get_ppms_user(db, _project_user)
                         if not _db_user:
+                            logger.debug(f"User :{_db_user} not exists, create new one")
                             _user_info = get_ppms_user(_project_user)
                             _user_schema = pdb.schemas.User(\
                                             username = _user_info.get('login'),\
@@ -204,7 +205,6 @@ async def sync_ppms_bookings() -> None:
                                             name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
                                             email = _user_info.get('email') \
                                         )
-                            logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
                             _db_user = pdb.crud.create_ppms_user(db, _user_schema)
                             logger.debug(f"Create user project...")
                             pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
@@ -217,19 +217,24 @@ async def sync_ppms_bookings() -> None:
                                 logger.debug(f"This booking has no assistant, username: {_db_user.username}")
                                 _booking_objects[_system_booking_id].username = _db_user.username
                             else:
+                                logger.debug(f"This booking has assistant")
                                 ### this session requires assistance
                                 # check if this user can operate the machine 
-                                _system_rights = get_system_rights(_sys_id)
+                                # _system_rights = get_system_rights(_sys_id)
                                 # _user_system_right = _system_rights.get(_db_user.username)
                                 #TODO: if _user_system_right is A, create 2 booking objects, one for user, one for assistant person
                                 # if _user_system_right in ("A", "S"):
                                     # _booking_objects[_system_booking_id].username = _db_user.username
                                 _booking_objects[_system_booking_id].username = _db_user.username
                                 #### get the assistance login
-                                _a_booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
-                                logger.debug(f"Booking details: {_a_booking_details}")
-                                if _a_booking_details:
+                                logger.debug(f"Querying booking details details...")
+                                _booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
+                                logger.debug(f"Booking details: {_booking_details}")
+                                if len(_booking_details) > 0:
+                                    _a_booking_details = _booking_details[0]
+                                    logger.debug(f"Booking: {_a_booking_details}")
                                     _assistance_id = int(_a_booking_details.get("assistantId"))
+                                    logger.debug(f"assistant: {_assistance_id}")
                                     # now translate this id to user
                                     _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
                                     if _assistant_in_db:
