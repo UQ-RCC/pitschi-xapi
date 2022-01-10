@@ -213,7 +213,8 @@ async def sync_ppms_bookings() -> None:
                         if not _db_user.userid:
                             pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
                         if _db_user.email == _system_booking.get('userEmail'):
-                            if _booking_objects[_system_booking_id].get('assistant').strip() == '':
+                            if not _booking_objects[_system_booking_id].get('assistant') or _booking_objects[_system_booking_id].get('assistant').strip() == '':
+                                logger.debug(f"This booking has no assistant, username: {_db_user.username}")
                                 _booking_objects[_system_booking_id].username = _db_user.username
                             else:
                                 ### this session requires assistance
@@ -226,12 +227,14 @@ async def sync_ppms_bookings() -> None:
                                 _booking_objects[_system_booking_id].username = _db_user.username
                                 #### get the assistance login
                                 _a_booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
+                                logger.debug(f"Booking details: {_a_booking_details}")
                                 if _a_booking_details:
                                     _assistance_id = int(_a_booking_details.get("assistantId"))
                                     # now translate this id to user
                                     _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
                                     if _assistant_in_db:
                                         _booking_objects[_system_booking_id].assistant = _assistant_in_db.username
+                                        logger.debug(f"Setting assistant: {_assistant_in_db.username}")
                                     else:
                                         ### look in ppms
                                         logger.debug(f">>>>>>>>>>>>>Need to find user with id: {_assistance_id}")
