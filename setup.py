@@ -2,12 +2,12 @@ import os
 from setuptools import setup, find_packages
 
 setup(
-    name='pitchixapi',
+    name='pitschixapi',
     version='0.1',
     description='External api for pitschi',
     author='Hoang Anh Nguyen',
     author_email='uqhngu36@uq.edu.au',
-    url='https://github.com/UQ-RCC/pitchi-xapi',
+    url='https://github.com/UQ-RCC/pitschi-xapi',
     packages=find_packages(exclude=["test*"]),
     # data_files=[
         # ('conf', ['conf/pitschi.conf'])

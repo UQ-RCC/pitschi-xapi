@@ -17,10 +17,27 @@ def get_ppms_user(login):
         if response.status_code == 204:
             raise Exception('Not found')
         else:
-            logger.debug("Response: {response}")
+            logger.debug(f"Response: {response}")
             return response.json(strict=False)
     else:
         raise Exception('Not found')
+
+
+def get_ppms_user_by_id(uid:int, coreid:int):
+    logger.debug("@get_ppms_user_by_id: Querying user by id")
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=GetUserDetailsById&checkUserId={uid}&coreid={coreid}"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code == 204:
+            return []
+        else:
+            return response.json(strict=False)
+    return []
+
 
 
 def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.date):
