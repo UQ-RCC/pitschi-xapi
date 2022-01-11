@@ -33,6 +33,7 @@ async def init_admin_user() -> None:
 @router.on_event("startup")
 @repeat_every(seconds=60 * 60 * 24 * int(config.get('ppms', 'project_sync_day')), wait_first=False, logger=logger)
 async def sync_ppms_weekly() -> None:
+    logger.debug(">>>>>>>>>>>> Start syncing PPMS projects")
     # first get systems
     # db = SessionLocal()
     with sessionmaker.context_session() as db:
@@ -61,7 +62,7 @@ async def sync_ppms_weekly() -> None:
                                     type = project.get('ProjectType'),\
                                     phase = project.get('Phase'),\
                                     description = project.get('Descr'))
-                pdb.crud.create_project(db, _projectSchema)
+                _project_in_db = pdb.crud.create_project(db, _projectSchema)
             ###### get more information
             if not _project_in_db.collection:
                 _q_collection = get_rdm_collection(config.get('ppms', 'coreid'), _project_in_db.id)
