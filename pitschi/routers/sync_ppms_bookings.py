@@ -23,7 +23,7 @@ sessionmaker = FastAPISessionMaker(database_uri)
 # every half hour
 @router.on_event("startup")
 @repeat_every(seconds=60 * int(config.get('ppms', 'booking_sync_minute')), wait_first=False, logger=logger)
-async def sync_ppms_bookings() -> None:
+def sync_ppms_bookings() -> None:
     # db = SessionLocal()
     logger.debug("<<<<<<<<<<<<<< Start syncing PPMS projects")
     with sessionmaker.context_session() as db:

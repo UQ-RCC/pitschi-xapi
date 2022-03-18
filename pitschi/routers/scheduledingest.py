@@ -306,7 +306,7 @@ def send_email(db, datasetinfo, result, messages):
 # every half hour
 @router.on_event("startup")
 @repeat_every(seconds=60 * int(config.get('clowder', 'ingest_frequency')), wait_first=False, logger=logger)
-async def ingest() -> None:
+def ingest() -> None:
     # db = SessionLocal()
     with sessionmaker.context_session() as db:
         logger.debug(">>> Repeated ingest: querying successfully imported datasets")
