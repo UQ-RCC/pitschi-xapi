@@ -21,10 +21,12 @@ sessionmaker = FastAPISessionMaker(database_uri)
 
 
 @router.on_event("startup")
-@repeat_every(seconds=15, wait_first=True, logger=logger, max_repetitions=1)
+@repeat_every(seconds=15, wait_first=False, logger=logger, max_repetitions=1)
 def init_admin_user() -> None:
     with sessionmaker.context_session() as db:
+        logger.debug(">>>>>>>>>>>> init >>>>>>>>>>>>>>>>>>>>>>>>>>")
         pdb.crud.create_admin_if_not_exist(db)
+        pdb.crud.create_caches_if_not_exist(db)
 
 
 # every 2 days or so
@@ -67,7 +69,13 @@ def sync_ppms_weekly() -> None:
             if not _project_in_db.collection:
                 _q_collection = get_rdm_collection(config.get('ppms', 'coreid'), _project_in_db.id)
                 if _q_collection:
+                    # create collection and collectioncache
+                    pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
+                    # create one its, one imb by default
+                    pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='its'))
+                    pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='qbi', priority=1))    
                     pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
+
             # now with project users
             _project_members = get_project_members(_project_in_db.id)
             logger.debug(f"project {_project_in_db.id} users:{_project_members}")

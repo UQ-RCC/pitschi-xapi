@@ -50,6 +50,18 @@ def create_admin_if_not_exist(db: Session):
     if not _admin:
         create_user(db, config.get("admin", "admin_username"), config.get("admin", "admin_password"), "Auto added")
 
+def create_caches_if_not_exist(db: Session):
+    if db.query(models.Cache).count() == 0:
+        db.add(models.Cache(name="its", path="shares01.rdm.uq.edu.au"))
+        db.add(models.Cache(name="qbi", path="data.qbi.uq.edu.au"))
+        db.add(models.Cache(name="imb", path="data.imb.uq.edu.au"))
+        db.add(models.Cache(name="aibn", path="data.aibn.uq.edu.au"))
+        db.add(models.Cache(name="cai", path="data.cai.uq.edu.au"))
+        db.commit()
+        db.flush()
+
+
+
 ################### datasets
 def get_datasets(db: Session, username: str):
     return db.query(models.Dataset).\
@@ -458,3 +470,37 @@ def summarize_dataset_info(db: Session, datasetid: int):
             dataset.system = get_system(db, booking.systemid)
             dataset.project = get_project(db, booking.projectid)
     return dataset
+
+
+
+######### collection and cache
+def get_collection(db: Session, collection_name: str):
+    return db.query(models.Collection).\
+            filter(models.Collection.name == collection_name).first()
+
+def create_collection(db: Session, acollection: schemas.CollectionBase):
+    collection = get_collection(db, acollection.name)
+    if not collection:
+        collection = models.Collection(**acollection.dict())
+        db.add(collection)
+        db.flush()
+        db.refresh(collection)
+        db.commit()
+    return collection
+
+def get_collection_cache(db: Session, collection_name: str, cache_name: str):
+    return db.query(models.CollectionCache).\
+            filter(models.CollectionCache.collection_name == collection_name).\
+            filter(models.CollectionCache.cache_name == cache_name).\
+            first()
+
+
+def create_collection_cache(db: Session, acollectioncache: schemas.CollectionCacheBase):
+    collectioncache = get_collection_cache(db, acollectioncache.collection_name, acollectioncache.cache_name)
+    if not collectioncache:
+        collectioncache = models.CollectionCache(**acollectioncache.dict())
+        db.add(collectioncache)
+        db.flush()
+        db.refresh(collectioncache)
+        db.commit()
+    return collectioncache

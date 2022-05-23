@@ -1,5 +1,5 @@
 import enum, datetime
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, Date, Time, Interval, ForeignKeyConstraint
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, Date, Time, Interval, ForeignKeyConstraint, null
 from sqlalchemy.orm import relationship
 
 from sqlalchemy.ext.mutable import MutableList
@@ -94,19 +94,57 @@ class User(Base):
     userid = Column(Integer, primary_key=False, index=False, nullable=True)
     name = Column(String, primary_key=False, index=False, nullable=False)
     email = Column(String, primary_key=False, index=False, nullable=False)
-    projects = relationship("UserProject", back_populates="user")
-    
+    projects = relationship("UserProject", back_populates="user")    
+
 
 class Project(Base):
     __tablename__ = 'project'
     id = Column(Integer, primary_key=True, index=True)
+    coreid = Column(Integer, primary_key=False, index=False, nullable=False, default=2)
     name = Column(String, primary_key=False, index=False, nullable=False)
     active = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
     type = Column(String, primary_key=False, index=False, nullable=False)
     phase = Column(Integer, primary_key=False, index=False, nullable=False)
     description = Column(String, primary_key=False, index=False, nullable=True)
-    collection = Column(String, primary_key=False, index=False, nullable=True)
+    collection = Column(String, ForeignKey("collection.name"), index=False, nullable=True)
     users = relationship("UserProject", back_populates="project")
+    collectionobj = relationship("Collection", back_populates="projects")
+
+class CollectionCache(Base):
+    __tablename__ = 'collectioncache'
+    collection_name = Column(String, ForeignKey('collection.name'), primary_key=True)
+    cache_name = Column(String, ForeignKey('cache.name'), primary_key=True)
+    priority =  Column(Integer, default=0, nullable=False) # the higher the better, its cache = 0
+    # limit
+    inodeslimit = Column(Integer, primary_key=False, index=False, nullable=True)
+    inodesused = Column(Integer, primary_key=False, index=False, nullable=True)
+    blocklimitgb = Column(Float, primary_key=False, index=False, nullable=True)
+    blockusedgb = Column(Float, primary_key=False, index=False, nullable=True)
+    lastupdated = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    cache = relationship("Cache", back_populates="collections")
+    collection = relationship("Collection", back_populates="caches")
+
+class Cache(Base):
+    __tablename__ = 'cache'
+    name = Column(String, primary_key=True, index=True)
+    path = Column(String, primary_key=False, index=False, nullable=False)
+    collections = relationship("CollectionCache", back_populates="cache")
+
+
+
+class Collection(Base):
+    __tablename__ = 'collection'
+    name = Column(String, primary_key=True, index=True)
+    # information at home
+    inodeslimit = Column(Integer, primary_key=False, index=False, nullable=True)
+    inodesused = Column(Integer, primary_key=False, index=False, nullable=True)
+    blocklimitgb = Column(Float, primary_key=False, index=False, nullable=True)
+    blockusedgb = Column(Float, primary_key=False, index=False, nullable=True)
+    capacitygb = Column(Float, primary_key=False, index=False, nullable=True)
+    lastupdated = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    projects = relationship("Project", back_populates="collectionobj")
+    caches = relationship("CollectionCache", back_populates="collection")
+
 
 class Booking(Base):
     __tablename__ = 'booking'

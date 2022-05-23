@@ -105,6 +105,17 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
+class CollectionCacheBase(BaseModel):
+    collection_name: str
+    cache_name: str
+    inodeslimit: Optional[int] = None
+    inodesused: Optional[int] = None
+    blocklimitgb: Optional[float] = None
+    blockusedgb: Optional[float] = None
+    lastupdated: Optional[datetime.datetime] = None
+    priority: Optional[int] = 0
+    
+
 class Project(BaseModel):
     id: int
     name: str
@@ -114,6 +125,37 @@ class Project(BaseModel):
     description: Optional[str] = None
     collection: Optional[str] = None
     users: List[UserProjectBase] = []
+    class Config:
+        orm_mode = True
+
+class CacheBase(BaseModel):
+    name: str
+    path: str
+
+class CollectionBase(BaseModel):
+    name: str
+    inodeslimit: Optional[int] = None
+    inodesused: Optional[int] = None
+    blocklimitgb: Optional[float] = None
+    blockusedgb: Optional[float] = None
+    capacitygb: Optional[float] = None
+    lastupdated: Optional[datetime.datetime] = None
+
+
+class CollectionCache(CollectionCacheBase):
+    collection: CollectionBase
+    cache: CacheBase
+    class Config:
+        orm_mode = True
+
+class Cache(CacheBase):
+    collections: List[CollectionCache] = []
+    class Config:
+        orm_mode = True
+
+class Collection(CollectionBase):
+    projects: List[Project] = []
+    caches: List[CollectionCache] = []
     class Config:
         orm_mode = True
 
