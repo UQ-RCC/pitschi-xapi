@@ -22,6 +22,8 @@ setup(
             "requests==2.25.1",
             "fastapi-utils==0.2.1",
             "pytz",
-            "requests-toolbelt==0.9.1"
+            "requests-toolbelt==0.9.1",
+            "jinja2==3.0.3",
+            "python-keycloak-client==0.2.3",
     ]
 )

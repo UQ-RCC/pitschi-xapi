@@ -5,6 +5,17 @@ from . import models
 import pytz, datetime
 import pitschi.config as config
 #################################
+### system stats
+#################################
+class SystemStats(BaseModel):
+    name: str
+    value: Optional[str] = None
+    description: Optional[str] = None
+    isstring: bool = True
+    class Config:
+        orm_mode = True
+
+#################################
 ### user
 #################################
 class PUser(BaseModel):

@@ -31,3 +31,17 @@ timezone=Australia/Brisbane
 
 [clowder]
 api=xxx
+
+
+[keycloak]
+server_url=xxxxxxxxxx
+realm_name=xxxxxxxxxxx
+client_id=xxxxxxxxxxxxxx
+client_secret=xxxxxxxxxxxxxxxxx
+authorization_url=xxxxxxxxxxxxxxxxx
+token_url=xxxxxxxxxxxx
+public_key=xxxxxxxxxxx
+
+[miscs]
+staticfolder=xxxxxxxxxxx
+

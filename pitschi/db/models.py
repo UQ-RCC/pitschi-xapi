@@ -24,6 +24,14 @@ class Status(enum.Enum):
     failed = 'failed'
 
 
+class SystemStats(Base):
+    __tablename__ = 'systemstats'
+    name = Column(String, unique=True, primary_key=True, index=True, nullable=False)
+    value = Column(String, unique=False, primary_key=False, index=False, nullable=True)
+    isstring = Column(Boolean, nullable=False, default=True)
+    description = Column(String, unique=False, primary_key=False, index=False, nullable=True)
+
+
 class PUser(Base):
     __tablename__ = 'puser'
     username = Column(String, unique=True, primary_key=True, index=True, nullable=False)

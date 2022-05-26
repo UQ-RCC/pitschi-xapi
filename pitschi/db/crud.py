@@ -1,5 +1,5 @@
 import base64
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import aliased, Session
 from sqlalchemy import inspect, and_, or_, func
 from urllib.parse import quote
 from . import models, schemas
@@ -34,6 +34,23 @@ def row2dict(row, keep_id = False):
             row_val = row_val.value
         d[column.name] = row_val
     return d
+
+
+################# system stats
+def set_stat(db: Session, name: str, value: str, desc: str = '', isstring: bool = True):
+    _stat = db.query(models.SystemStats).filter(models.SystemStats.name == name).first()
+    if not _stat:
+        _stat = models.SystemStats(name=name, value=value, description=desc, isstring=isstring)
+        db.add(_stat)
+    else:
+        db.query(models.SystemStats).\
+            filter(models.SystemStats.name == name).\
+            update({"value": value, "description": desc, 'istring': isstring})
+    db.commit()
+    db.flush()
+
+def get_stat(db: Session, name:str):
+    return db.query(models.SystemStats).filter(models.SystemStats.name == name).first()
 
 ################# user
 def get_user(db: Session, username: str, password: str):
@@ -344,7 +361,7 @@ def get_bookings(db: Session, bookingdate: datetime.date):
             filter(models.Booking.cancelled == False).all()
 
 def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime.date):
-    # this is all because I cannot do a join properlly using sqlalchemy
+    # probarbly there is better way
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
                 filter(models.Booking.username != None). \
@@ -353,6 +370,14 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
     for booking in bookings:
         if booking.projectid:
             booking.project = get_project(db, booking.projectid)
+            if booking.project.collection:
+                _c_cache = db.query(models.CollectionCache).\
+                            filter(models.CollectionCache.collection_name == booking.project.collection).\
+                            order_by(models.CollectionCache.priority.desc()).first()
+                if _c_cache:
+                    _cache = db.query(models.Cache).filter(models.Cache.name == _c_cache.cache_name).first()
+                    if _cache:
+                        booking.project.cache = _cache
     return bookings
 
 
@@ -365,6 +390,14 @@ def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate:
     for booking in bookings:
         if booking.projectid:
             booking.project = get_project(db, booking.projectid)
+            if booking.project.collection:
+                _c_cache = db.query(models.CollectionCache).\
+                            filter(models.CollectionCache.collection_name == booking.project.collection).\
+                            order_by(models.CollectionCache.priority.desc()).first()
+                if _c_cache:
+                    _cache = db.query(models.Cache).filter(models.Cache.name == _c_cache.cache_name).first()
+                    if _cache:
+                        booking.project.cache = _cache
     return bookings
 
 
@@ -504,3 +537,66 @@ def create_collection_cache(db: Session, acollectioncache: schemas.CollectionCac
         db.refresh(collectioncache)
         db.commit()
     return collectioncache
+
+
+
+
+#################### get projects info
+def get_projects_full(db: Session):
+    """
+    Get projects and all its information: collections, users
+    """
+    projects =  db.query(models.Project).\
+                filter(models.Project.collection != None).\
+                filter(models.Project.active == True).all()
+    for _project in projects:
+        _users = db.query(models.User).join(models.UserProject).filter(models.UserProject.projectid == _project.id).all()
+        _project.participants = _users
+        _caches = db.query(models.CollectionCache).filter(models.CollectionCache.collection_name == _project.collection).all()
+        _project.caches = _caches
+    return projects
+
+
+def get_projects(db: Session):
+    """
+    Get projects information only
+    """
+    return db.query(models.Project).all()
+
+
+def get_collections(db: Session):
+    """
+    Get all collections information
+    """
+    return db.query(models.Collection).all()
+
+def get_collection(db: Session, collectionid: str):
+    """
+    Get single collection
+    """
+    db.query(models.CollectionCache).\
+        filter(models.CollectionCache.collection_name == collectionid).all()
+
+def update_collection(db: Session, collectionid: str, collectioncacheinfo: schemas.CollectionCacheBase):
+    """
+    Get all collections information
+    """
+    _collection_cache_in_db = db.query(models.CollectionCache).\
+                        filter(models.CollectionCache.collection_name == collectionid).\
+                        filter(models.CollectionCache.cache_name == collectioncacheinfo.cache_name).first()
+    if not _collection_cache_in_db:
+        # create a new one
+        collectioncache = models.CollectionCache(**collectioncacheinfo.dict())
+        db.add(collectioncache)
+        db.flush()
+        db.refresh(collectioncache)
+        db.commit()
+    else:
+        existing_cc_dic = row2dict(_collection_cache_in_db, True)
+        stored_cc_model = schemas.CollectionBase(**existing_cc_dic)
+        update_cc_data = collectioncacheinfo.dict(exclude_unset=True)
+        updated_cc_item = stored_cc_model.copy(update=update_cc_data)
+        db.query(models.CollectionCache).\
+                        filter(models.CollectionCache.collection_name == collectionid).\
+                        filter(models.CollectionCache.cache_name == collectioncacheinfo.cache_name).\
+                        update(updated_cc_item)
