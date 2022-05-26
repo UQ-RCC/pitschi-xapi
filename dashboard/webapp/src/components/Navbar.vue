@@ -56,7 +56,7 @@
 
                 <v-list-item to="/projects" v-if="this.is_admin">
                     <v-list-item-icon>
-                        <v-icon>mdi-poll-box-outline</v-icon>
+                        <v-icon>mdi-poll-box</v-icon>
                     </v-list-item-icon>
                     <v-list-item-title class="ml-n5">Projects</v-list-item-title>
                 </v-list-item>

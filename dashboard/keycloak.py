@@ -8,19 +8,19 @@ from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_500_INTERNAL_SERVER_ERR
 from jose.exceptions import ExpiredSignatureError
 
 realm = KeycloakRealm(
-    server_url=config.get_config().get('keycloak', 'server_url'), 
-    realm_name=config.get_config().get('keycloak', 'realm_name')
+    server_url=config.get('keycloak', 'server_url'), 
+    realm_name=config.get('keycloak', 'realm_name')
 )
 
 keycloak_openid = KeycloakOpenidConnect(
     realm=realm, 
-    client_id=config.get_config().get('keycloak', 'client_id'),
-    client_secret=config.get_config().get('keycloak', 'client_secret')
+    client_id=config.get('keycloak', 'client_id'),
+    client_secret=config.get('keycloak', 'client_secret')
 )
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=config.get_config().get('keycloak', 'authorization_url'),
-    tokenUrl=config.get_config().get('keycloak', 'token_url'),
+    authorizationUrl=config.get('keycloak', 'authorization_url'),
+    tokenUrl=config.get('keycloak', 'token_url'),
 )
 
 """
@@ -29,7 +29,7 @@ Decode the token
 def decode(token: str = Depends(oauth2_scheme)):
     KEYCLOAK_PUBLIC_KEY = (
         "-----BEGIN PUBLIC KEY-----\n"
-        + config.get_config().get('keycloak', 'public_key')
+        + config.get('keycloak', 'public_key')
         + "\n-----END PUBLIC KEY-----"
     )
     try:

@@ -10,7 +10,7 @@
         </v-main>
             <v-footer app>
                 <v-row justify="end">
-                    <a href="https://github.com/UQ-RCC/datamover">pitschi-datamover</a>
+                    <a href="https://github.com/UQ-RCC/pitschi-xapi">Pitschi Dashboard</a>
                 </v-row>
             </v-footer>    
 

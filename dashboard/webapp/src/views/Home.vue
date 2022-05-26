@@ -1,12 +1,12 @@
 <template>
     <div>        
-
+        Welcome to the dashboard!
 
     </div>
 </template>
 
 <script>
-    import Vue from 'vue'
+    // import Vue from 'vue'
     
 
     export default {

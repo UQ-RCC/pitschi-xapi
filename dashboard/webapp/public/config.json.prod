@@ -2,7 +2,7 @@
   "keycloak": {
     "url": "https://auth.rcc.uq.edu.au/auth/",
     "realm": "nimrod",
-    "clientId": "jsclient",
+    "clientId": "dashboardjsclient",
     "onLoad": "login-required",
     "minValidity": 10
   },

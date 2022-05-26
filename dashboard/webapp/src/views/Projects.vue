@@ -21,15 +21,16 @@
         data() {
             return {
                 projects: [],
-                refreshPending: false,
+                loading: false,
             }
         },
         methods: {
             async refresh(){
                 Vue.$log.info("refresh ...")
                 if (this.$keycloak.hasRealmRole("superadmin")){
-                    this.refreshPending = true
-                    this.projects = await ProjectAPI.getProjects()                
+                    this.loading = true
+                    this.projects = await ProjectAPI.getProjects() 
+                    this.loading = false               
                 }
                 else {
                     Vue.$log.info("not superadmin ...")

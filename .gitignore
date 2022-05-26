@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 conf/pitschixapi.conf
+
+dashboard/webapp/node_modules/
+dashboard/webapp/yarn.lock

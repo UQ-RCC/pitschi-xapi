@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 logger = logging.getLogger('datamover')
 logger.setLevel(logging.DEBUG)
 
-log_file = config.get_config().get('logging', 'log_file')
+log_file = config.get('logging', 'log_file')
 fh = TimedRotatingFileHandler(log_file, when='midnight',backupCount=7)
 fh.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -25,9 +25,9 @@ logging.getLogger("uvicorn.error").addHandler(fh)
 logging.getLogger("uvicorn").addHandler(fh)
 
 
-dashboard = FastAPI(title="Pitschi data mover",
-              description="Manage data movement from camera machine to preprocessing to RDM")
-dashboard.add_middleware(
+pitschi = FastAPI(title="Pitschi dashboard",
+              description="A dashboard for managing pitschi")
+pitschi.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -35,7 +35,7 @@ dashboard.add_middleware(
     allow_headers=["*"],
 )
 
-dashboard.include_router(
+pitschi.include_router(
     user.router,
     prefix="/api",
     tags=["user"],
@@ -44,7 +44,7 @@ dashboard.include_router(
 )
 
 
-dashboard.include_router(
+pitschi.include_router(
     projects.router,
     prefix="/api",
     tags=["projects"],
@@ -52,7 +52,7 @@ dashboard.include_router(
     responses={404: {"description": "Not found"}},
 )
 
-dashboard.include_router(
+pitschi.include_router(
     collections.router,
     prefix="/api",
     tags=["collections"],
@@ -61,7 +61,7 @@ dashboard.include_router(
 )
 
 
-dashboard.mount('/', StaticFiles(directory=config.get_config().get("miscs", "staticfolder"), html=True, check_dir=False))
+pitschi.mount('/', StaticFiles(directory=config.get("miscs", "staticfolder"), html=True, check_dir=False))
 
 logger.info("Start the server")
 

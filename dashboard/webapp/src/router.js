@@ -7,7 +7,7 @@ import Collections from './views/Collections.vue'
 Vue.use(Router)
 
 export default new Router({
-    mode: 'home',
+    mode: 'history',
     base: process.env.BASE_URL,
     routes: [
         {
