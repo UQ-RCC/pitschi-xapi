@@ -27,6 +27,18 @@ class PUser(BaseModel):
         orm_mode = True
 
 #################################
+### repo type
+#################################
+class Repo(BaseModel):
+    name: str
+    type: models.RepoType = models.RepoType.clowder
+    url: str
+    apiurl: str
+    apikey: str
+    class Config:
+        orm_mode = True
+
+#################################
 ### files
 #################################
 class FileBase(BaseModel):
@@ -67,6 +79,7 @@ class DatasetBase(BaseModel):
     space: Optional[str] = None
     datasetid: Optional[str] = None
     bookingid: Optional[int] = None
+    repo_name: str = "pitschi"
     
 class DatasetCreate(DatasetBase):
     files: List[FileBase] = []
@@ -74,8 +87,10 @@ class DatasetCreate(DatasetBase):
 class Dataset(DatasetBase):
     id: int
     files: List[File] = []
+    repo: Optional[Repo] = None
     class Config:
         orm_mode = True
+
 
 ###################################################
 ############### PPMS ############################

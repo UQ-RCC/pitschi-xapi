@@ -27,8 +27,6 @@ def init_admin_user() -> None:
     with sessionmaker.context_session() as db:
         logger.debug(">>>>>>>>>>>> init >>>>>>>>>>>>>>>>>>>>>>>>>>")
         pdb.crud.create_admin_if_not_exist(db)
-        pdb.crud.create_caches_if_not_exist(db)
-        pdb.crud.set_stat(db, name='syncing_projects', value='False', desc='is system syncing projects', isstring=False)
 
 # every 2 days or so
 # sync systems

@@ -40,12 +40,12 @@ def row2dict(row, keep_id = False):
 def set_stat(db: Session, name: str, value: str, desc: str = '', isstring: bool = True):
     _stat = db.query(models.SystemStats).filter(models.SystemStats.name == name).first()
     if not _stat:
-        _stat = models.SystemStats(name=name, value=value, description=desc, isstring=isstring)
+        _stat = models.SystemStats(name=name, value=value, isstring=isstring, description=desc)
         db.add(_stat)
     else:
         db.query(models.SystemStats).\
             filter(models.SystemStats.name == name).\
-            update({"value": value, "description": desc, 'istring': isstring})
+            update({"value": value, "description": desc, 'isstring': isstring})
     db.commit()
     db.flush()
 
@@ -67,15 +67,6 @@ def create_admin_if_not_exist(db: Session):
     if not _admin:
         create_user(db, config.get("admin", "admin_username"), config.get("admin", "admin_password"), "Auto added")
 
-def create_caches_if_not_exist(db: Session):
-    if db.query(models.Cache).count() == 0:
-        db.add(models.Cache(name="its", path="shares01.rdm.uq.edu.au"))
-        db.add(models.Cache(name="qbi", path="data.qbi.uq.edu.au"))
-        db.add(models.Cache(name="imb", path="data.imb.uq.edu.au"))
-        db.add(models.Cache(name="aibn", path="data.aibn.uq.edu.au"))
-        db.add(models.Cache(name="cai", path="data.cai.uq.edu.au"))
-        db.commit()
-        db.flush()
 
 
 
@@ -512,8 +503,12 @@ def get_collection(db: Session, collection_name: str):
             filter(models.Collection.name == collection_name).first()
 
 def create_collection(db: Session, acollection: schemas.CollectionBase):
-    collection = get_collection(db, acollection.name)
+    logger.info(f">>>>>>>create collection: {acollection.name}")
+    collection = db.query(models.Collection).\
+            filter(models.Collection.name == acollection.name).one_or_none()
+    logger.info(f">>>>>>>create collection: {collection}")
     if not collection:
+        logger.info(f">>>>>>>create collection: null <>>> create new one")
         collection = models.Collection(**acollection.dict())
         db.add(collection)
         db.flush()

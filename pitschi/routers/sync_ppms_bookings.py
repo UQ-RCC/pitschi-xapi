@@ -22,7 +22,7 @@ sessionmaker = FastAPISessionMaker(database_uri)
 
 # every half hour
 @router.on_event("startup")
-@repeat_every(seconds=60 * int(config.get('ppms', 'booking_sync_minute')), wait_first=False, logger=logger)
+@repeat_every(seconds=60 * int(config.get('ppms', 'booking_sync_minute')), wait_first=True, logger=logger)
 def sync_ppms_bookings() -> None:
     # db = SessionLocal()
     logger.debug("<<<<<<<<<<<<<< Start syncing PPMS projects")
@@ -121,6 +121,9 @@ def sync_ppms_bookings() -> None:
                                                     phase = project.get('Phase'),\
                                                     description = project.get('Descr'))
                                     _project_in_db = pdb.crud.create_project(db, _projectSchema)
+                        if not _project_in_db:
+                            logger.debug(f"project id:{_system_booking.get('projectId')} still not in database. ignore this booking")
+                            continue
                         # first collection
                         if not _project_in_db.collection:
                             _q_collection = get_rdm_collection(config.get('ppms', 'coreid'), _project_in_db.id)

@@ -17,7 +17,7 @@ def get_ppms_user(login):
         if response.status_code == 204:
             raise Exception('Not found')
         else:
-            logger.debug(f"Response: {response}")
+            # logger.debug(f"Response: {response}")
             return response.json(strict=False)
     else:
         raise Exception('Not found')
@@ -141,6 +141,7 @@ def get_projects():
     logger.debug("Querying projects")
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&active=true&format=json"
+    # payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&format=json"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }

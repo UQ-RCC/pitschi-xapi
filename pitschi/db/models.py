@@ -24,6 +24,9 @@ class Status(enum.Enum):
     failed = 'failed'
 
 
+class RepoType(enum.Enum):
+    clowder = 'clowder'
+
 class SystemStats(Base):
     __tablename__ = 'systemstats'
     name = Column(String, unique=True, primary_key=True, index=True, nullable=False)
@@ -57,11 +60,24 @@ class Dataset(Base):
     datasetid = Column(String, unique=False, primary_key=False, index=False, nullable=False, default="")
 
     bookingid = Column(Integer, ForeignKey("booking.id"), nullable=False)
+
+    repo_name = Column(String, ForeignKey("repo.name"), nullable=False)
+    repo =  relationship("Repo", back_populates="datasets")
+    
     booking = relationship("Booking", back_populates="datasets")
 
     files = relationship("File", back_populates="dataset")
 
-
+# not being used atm
+class Repo(Base):
+    __tablename__ = 'repo'
+    name = Column(String, primary_key=True, index=True)
+    type = Column(Enum(RepoType), primary_key=False, index=False, nullable=False, default=RepoType.clowder)
+    url = Column(String, primary_key=False, index=False, nullable=False)
+    apiurl = Column(String, primary_key=False, index=False, nullable=False)
+    apikey = Column(String, primary_key=False, index=False, nullable=False)
+    
+    datasets = relationship("Dataset", back_populates="repo")
 
 class File(Base):
     __tablename__ = 'file'
