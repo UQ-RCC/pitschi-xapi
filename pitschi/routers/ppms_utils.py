@@ -54,7 +54,7 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
             pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
             # create one its, one imb by default
             pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='its'))
-            pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='qbi', priority=1))    
+            # pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='qbi', priority=1))    
             if not _project_in_db.collection:        
                 pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
 
