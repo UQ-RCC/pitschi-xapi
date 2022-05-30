@@ -351,7 +351,7 @@ def get_bookings(db: Session, bookingdate: datetime.date):
             filter(models.Booking.bookingdate == bookingdate). \
             filter(models.Booking.cancelled == False).all()
 
-def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime.date):
+def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime.date, preferred_cache: str=""):
     # probarbly there is better way
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
@@ -362,7 +362,14 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
         if booking.projectid:
             booking.project = get_project(db, booking.projectid)
             if booking.project.collection:
-                _c_cache = db.query(models.CollectionCache).\
+                _c_cache = None
+                if preferred_cache: 
+                    _c_cache = db.query(models.CollectionCache).\
+                            filter(models.CollectionCache.collection_name == booking.project.collection).\
+                            filter(models.CollectionCache.cache_name == preferred_cache).one_or_none()
+                # preferred_cache not provided, or wrong preffercached
+                if not _c_cache:
+                    _c_cache = db.query(models.CollectionCache).\
                             filter(models.CollectionCache.collection_name == booking.project.collection).\
                             order_by(models.CollectionCache.priority.desc()).first()
                 if _c_cache:
@@ -372,7 +379,7 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
     return bookings
 
 
-def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate: datetime.date, username: str):
+def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate: datetime.date, username: str, preferred_cache: str=""):
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
                 filter(or_(models.Booking.username == username, models.Booking.assistant == username)). \
@@ -382,7 +389,14 @@ def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate:
         if booking.projectid:
             booking.project = get_project(db, booking.projectid)
             if booking.project.collection:
-                _c_cache = db.query(models.CollectionCache).\
+                _c_cache = None
+                if preferred_cache: 
+                    _c_cache = db.query(models.CollectionCache).\
+                            filter(models.CollectionCache.collection_name == booking.project.collection).\
+                            filter(models.CollectionCache.cache_name == preferred_cache).one_or_none()
+                # preferred_cache not provided, or wrong preffercached
+                if not _c_cache:
+                    _c_cache = db.query(models.CollectionCache).\
                             filter(models.CollectionCache.collection_name == booking.project.collection).\
                             order_by(models.CollectionCache.priority.desc()).first()
                 if _c_cache:

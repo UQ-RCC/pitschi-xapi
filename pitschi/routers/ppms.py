@@ -33,7 +33,7 @@ async def get_project_rdmcollection(projectid: int, \
 
 
 @router.get("/bookings")
-async def get_bookings_in_one_day(  systemid: int, date: datetime.date, login: str="", \
+async def get_bookings_in_one_day(  systemid: int, date: datetime.date, login: str="", preferredcache="",\
                                     credentials: HTTPBasicCredentials = Depends(security),\
                                     db: Session = Depends(pdb.get_db)):
     user = pdb.crud.get_user(db, credentials.username, credentials.password)
@@ -45,9 +45,9 @@ async def get_bookings_in_one_day(  systemid: int, date: datetime.date, login: s
         )
     logger.debug("Querying booking of a certain date")
     if login:
-        booking_info = pdb.crud.get_bookings_filter_system_and_user(db, systemid, date, login)
+        booking_info = pdb.crud.get_bookings_filter_system_and_user(db, systemid, date, login, preferredcache)
     else:
-        booking_info = pdb.crud.get_bookings_filter_system(db, systemid, date)
+        booking_info = pdb.crud.get_bookings_filter_system(db, systemid, date, preferredcache)
     logger.debug(f"{booking_info}")
     return booking_info
 
