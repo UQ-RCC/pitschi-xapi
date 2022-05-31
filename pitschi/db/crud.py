@@ -428,7 +428,7 @@ def create_booking(db: Session, session: schemas.Booking):
         update_booking_data = session.dict(exclude_unset=True)
         updated_booking_item = stored_booking_model.copy(update=update_booking_data)
         updated_booking_item_dict = updated_booking_item.dict()
-        db.query(models.Booking).filter(models.Booking.id == session.id).update(updated_booking_item)
+        db.query(models.Booking).filter(models.Booking.id == session.id).update(updated_booking_item_dict)
         db.flush()
         db.commit()
     return booking
