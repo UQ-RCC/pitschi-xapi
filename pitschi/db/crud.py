@@ -247,7 +247,7 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
     _dataset_db = get_dataset(db, datasetid)
     _ds_mode_db = _dataset_db.mode
     _ds_status_db = _dataset_db.status
-    logger.debug(f"@update dataset: datasetdb mode={_ds_mode_db} databsetdb_status= {_ds_status_db} dataset info: {_dataset_db}")
+    logger.debug(f"@update dataset: datasetdb mode={_ds_mode_db} databsetdb_status= {_ds_status_db} dataset info: {str(_dataset_db)}")
     # ignore if _dataset not exists
     if _dataset_db:
         existing_ds_dic = row2dict(_dataset_db, True)
@@ -255,6 +255,7 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
         update_ds_data = dataset.dict(exclude_unset=True)
         updated_ds_item = stored_ds_model.copy(update=update_ds_data)
         del updated_ds_item.files
+        del updated_ds_item.repo
         updated_ds_item_dict = updated_ds_item.dict()
         logger.debug(f"updated dataset: {updated_ds_item_dict}")
         db.query(models.Dataset).filter(models.Dataset.id == datasetid).update(updated_ds_item_dict)
