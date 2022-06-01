@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBasic
 import pitschi.db as pdb
 from sqlalchemy.orm import Session
 
@@ -13,7 +12,6 @@ import dashboard.keycloak as keycloak
 
 router = APIRouter()
 logger = logging.getLogger('pitschidashboard')
-security = HTTPBasic()
 
 
 @router.put("/collections/{collectionid}")

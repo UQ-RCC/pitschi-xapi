@@ -231,7 +231,7 @@ def update_file(db: Session, fileid: int, updatedata: dict):
         existing_f_dic = row2dict(_file_in_db, True)
         stored_f_model = schemas.File(**existing_f_dic)
         updated_f_item = stored_f_model.copy(update=updatedata)
-        db.query(models.File).filter(models.File.id == fileid).update(updated_f_item)
+        db.query(models.File).filter(models.File.id == fileid).update(updated_f_item.dict())
         db.flush()
         db.commit()
             
@@ -255,7 +255,7 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
         update_ds_data = dataset.dict(exclude_unset=True)
         updated_ds_item = stored_ds_model.copy(update=update_ds_data)
         del updated_ds_item.files
-        db.query(models.Dataset).filter(models.Dataset.id == datasetid).update(updated_ds_item)
+        db.query(models.Dataset).filter(models.Dataset.id == datasetid).update(updated_ds_item.dict())
         ## TODO: send an email here if the update is about imported successfully, saying the data is already in RDM, but not yet ingester
         db.flush()
         db.commit()
@@ -272,7 +272,7 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
                 stored_f_model = schemas.File(**existing_f_dic)
                 update_f_data = file.dict(exclude_unset=True)
                 updated_f_item = stored_f_model.copy(update=update_f_data)
-                db.query(models.File).filter(models.File.id == _file_in_db.id).update(updated_f_item)
+                db.query(models.File).filter(models.File.id == _file_in_db.id).update(updated_f_item.dict())
             else:
                 afile = models.File(**file.dict())
                 afile.dataset_id = datasetid
@@ -594,10 +594,10 @@ def update_collection(db: Session, collectionid: str, collectioncacheinfo: schem
         db.commit()
     else:
         existing_cc_dic = row2dict(_collection_cache_in_db, True)
-        stored_cc_model = schemas.CollectionBase(**existing_cc_dic)
+        stored_cc_model = schemas.CollectionCacheBase(**existing_cc_dic)
         update_cc_data = collectioncacheinfo.dict(exclude_unset=True)
         updated_cc_item = stored_cc_model.copy(update=update_cc_data)
         db.query(models.CollectionCache).\
                         filter(models.CollectionCache.collection_name == collectionid).\
                         filter(models.CollectionCache.cache_name == collectioncacheinfo.cache_name).\
-                        update(updated_cc_item)
+                        update(updated_cc_item.dict())
