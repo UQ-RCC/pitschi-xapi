@@ -211,7 +211,12 @@ def sync_ppms_bookings() -> None:
                                         logger.error(f"Booking details of booking {_system_booking_id} returns nothing. Username of this booking is null")
 
         # create bookings
-        [ pdb.crud.create_booking(db, _booking_object) for _booking_object in _booking_objects.values() ]
+        # [ pdb.crud.create_booking(db, _booking_object) for _booking_object in _booking_objects.values() ]
+        for _booking_object in _booking_objects.values():
+            try:
+                pdb.crud.create_booking(db, _booking_object)
+            except Exception as e:
+                logger.error(f"Problem creating/updating booking {_booking_object}. >>>Error: {e}")
         # db.close()
     
     
