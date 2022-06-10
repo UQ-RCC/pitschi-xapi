@@ -86,17 +86,22 @@ def sync_ppms_bookings() -> None:
                     # if projectId == 0 --> highly likely a training
                     _booking_objects[_system_booking_id].status = _system_booking.get('status')
                     _booking_objects[_system_booking_id].assistant = _system_booking.get('assistant')
+
+                    # TODO: check if userId is there 
                     if _booking_objects[_system_booking_id].assistant:
                         _booking_objects[_system_booking_id].assistant = _booking_objects[_system_booking_id].assistant.strip()
-                    if _system_booking.get('projectId') == '0' or _system_booking.get('projectId') == 0:
-                        if _system_booking.get('userName') == 'Training' and _system_booking.get('assistant').strip() != '':
+                    if _system_booking.get('projectId') == '0' or not _system_booking.get('projectId'):
+                        logger.info(f">>>booking {_system_booking} is a training")
+                        if ( _system_booking.get('userName') == 'Training' or _system_booking.get('User') == 'Training') and _system_booking.get('assistant') != '':
                             _a_booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
+                            logger.info(f"training details {_a_booking_details}")
                             if len(_a_booking_details) > 0:
                                 _assistance_id = int(_a_booking_details[0].get("assistantId"))
                                 # now translate this id to user
                                 _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
                                 if _assistant_in_db:
                                     _booking_objects[_system_booking_id].username = _assistant_in_db.username
+                                    _booking_objects[_system_booking_id].assistant = _assistant_in_db.username
                                 else:
                                     ### look in ppms
                                     logger.debug(f">>>>>>>>>>>>>Need to find user with id: {_assistance_id}")                
@@ -209,6 +214,15 @@ def sync_ppms_bookings() -> None:
                                                 _booking_objects[_system_booking_id].assistant = _user_info.get('login')
                                     else:
                                         logger.error(f"Booking details of booking {_system_booking_id} returns nothing. Username of this booking is null")
+                        # end for loop
+                        # get user details
+                        if _system_booking.get('userId'):
+                            _user_in_db = pdb.crud.get_ppms_user_by_uid(db, int(_system_booking.get('userId')))
+                            _booking_objects[_system_booking_id].username = _user_in_db.username
+                        else:
+                            logger.error(f">>>> Booking {_booking_objects[_system_booking_id]} has no userId specified") 
+                                        
+
 
         # create bookings
         # [ pdb.crud.create_booking(db, _booking_object) for _booking_object in _booking_objects.values() ]
@@ -216,7 +230,7 @@ def sync_ppms_bookings() -> None:
             try:
                 pdb.crud.create_booking(db, _booking_object)
             except Exception as e:
-                logger.error(f"Problem creating/updating booking {_booking_object}. >>>Error: {e}")
+                logger.error(f"Problem creating booking {_booking_object}. >>>Error: {e}")
         # db.close()
     
     
