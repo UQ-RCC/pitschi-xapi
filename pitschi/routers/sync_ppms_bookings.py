@@ -217,8 +217,12 @@ def sync_ppms_bookings() -> None:
                         # end for loop
                         # get user details
                         if _system_booking.get('userId'):
+                            logger.debug(f"checking userId:{_system_booking.get('userId')}")
                             _user_in_db = pdb.crud.get_ppms_user_by_uid(db, int(_system_booking.get('userId')))
-                            _booking_objects[_system_booking_id].username = _user_in_db.username
+                            if _user_in_db:
+                                _booking_objects[_system_booking_id].username = _user_in_db.username
+                            else:
+                                logger.error(f">>>> Booking {_booking_objects[_system_booking_id]} userId specified {_system_booking.get('userId')}, but could not find it") 
                         else:
                             logger.error(f">>>> Booking {_booking_objects[_system_booking_id]} has no userId specified") 
                                         

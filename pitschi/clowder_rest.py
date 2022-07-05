@@ -265,6 +265,29 @@ def upload_metadata(key, api_url, fileid, metadata):
     else:
         res.raise_for_status()
 
+def upload_dataset_metadata(key, api_url, datasetid, metadata):
+    """
+    upload dataset metadaa
+    """
+    url = f"{api_url}/datasets/{datasetid}/usermetadata"
+    res =  _post(url, key, data=json.dumps(metadata))
+    if res.ok:
+        return res.json()
+    else:
+        res.raise_for_status()
+
+def add_dataset_tags(key, api_url, datasetid, tags):
+    """
+    upload dataset tags
+    """
+    url = f"{api_url}/datasets/{datasetid}/tags"
+    tag_data = {"tags": tags}
+    res =  _post(url, key, data=json.dumps(tag_data))
+    if res.ok:
+        return res.json()
+    else:
+        res.raise_for_status()
+
 
 def submit_for_extraction(key, api_url, fileid, extractor_name):
     url = f"{api_url}/files/{fileid}/extractions"
@@ -329,6 +352,11 @@ def create_dataset(key, api_url, space_id, dataset_name, check_duplicate=True):
         if res.ok:
             return res_json
     res.raise_for_status()
+
+def update_dataset_description(key, api_url, datasetid, description):
+    url = f"{api_url}/datasets/{datasetid}/description"
+    data = { "description": description}
+    return _put(url, key, data=json.dumps(data))
 
 
 def find_folder(key, api_url, dataset_id, path_from_parent_dataset):
