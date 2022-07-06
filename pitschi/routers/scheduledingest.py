@@ -109,6 +109,21 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                     pdb.crud.update_dataset_space_datasetid(db, dataset.id, None, _ds_info.get('id'))
                     dataset.datasetid = _ds_info.get('id')
                     found = True
+                    #### add metadata
+                    _dataset_booking = pdb.crud.get_booking(db, dataset.bookingid)
+                    if not _dataset_booking:
+                        logger.error(f"@dataset {dataset} does not have any booking.: {dataset.bookingid}")
+                        return (False, ["Fail to find dataset booking"])
+                    _ds_metadata = {
+                        "system": dataset.origionalmachine,
+                        "author": _dataset_booking.username,
+                        "projectid": _dataset_booking.projectid,
+                        "bookingid": _dataset_booking.id
+                    }
+                    clowderful.upload_dataset_metadata(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_metadata)
+                    ### add tags
+                    _ds_tags = [ dataset.origionalmachine, _dataset_booking.username, _dataset_booking.projectid ]
+                    clowderful.add_dataset_tags(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_tags)
             else:
                 found = False
                 logger.debug("@ingest-dataset: cannot find dataset, ERROR")
