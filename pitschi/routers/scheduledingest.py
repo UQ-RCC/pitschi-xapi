@@ -122,7 +122,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                     }
                     clowderful.upload_dataset_metadata(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_metadata)
                     ### add tags
-                    _ds_tags = [ dataset.origionalmachine, _dataset_booking.username, _dataset_booking.projectid ]
+                    _ds_tags = [ dataset.origionalmachine, _dataset_booking.username, str(_dataset_booking.projectid) ]
                     clowderful.add_dataset_tags(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_tags)
             else:
                 found = False
