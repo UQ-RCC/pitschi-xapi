@@ -79,13 +79,14 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
                 logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
                 _db_user = pdb.crud.create_ppms_user(db, _user_schema)
                 logger.debug(f"User :{_user_info.get('login')} added to database")
-            # add to userproject if not exists           
-            pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
-                                                username = _user_info.get('login'),\
-                                                projectid = _project_in_db.id ) )
             if not _db_user.userid:
                 # update it
                 pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
+            # add to userproject if not exists           
+            pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
+                                                username = _db_user.username,\
+                                                projectid = _project_in_db.id ) )
+            
     # done syncing
     logger.debug("--> Done syncing")
     pdb.crud.set_stat(db, name='syncing_projects', value='False')
