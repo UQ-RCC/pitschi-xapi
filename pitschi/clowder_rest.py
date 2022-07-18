@@ -269,7 +269,7 @@ def upload_dataset_metadata(key, api_url, datasetid, metadata):
     """
     upload dataset metadaa
     """
-    url = f"{api_url}/datasets/{datasetid}/usermetadata"
+    url = f"{api_url}/datasets/{datasetid}/metadata"
     res =  _post(url, key, data=json.dumps(metadata))
     if res.ok:
         return res.json()
