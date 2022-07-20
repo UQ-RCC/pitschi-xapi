@@ -534,6 +534,11 @@ def get_collection_cache(db: Session, collection_name: str, cache_name: str):
             filter(models.CollectionCache.cache_name == cache_name).\
             first()
 
+def get_collection_caches(db: Session, collection_name: str):
+    return db.query(models.CollectionCache).\
+            filter(models.CollectionCache.collection_name == collection_name).\
+            all()
+
 
 def create_collection_cache(db: Session, acollectioncache: schemas.CollectionCacheBase):
     collectioncache = get_collection_cache(db, acollectioncache.collection_name, acollectioncache.cache_name)
@@ -546,6 +551,18 @@ def create_collection_cache(db: Session, acollectioncache: schemas.CollectionCac
     return collectioncache
 
 
+def get_caches(db: Session):
+    return db.query(models.Cache).all()
+
+
+def delete_collection_cache(db: Session, collectionid: str, cache_name: str):
+    _collection_cache = db.query(models.CollectionCache).\
+                filter(models.CollectionCache.collection_name == collectionid).\
+                filter(models.CollectionCache.cache_name == cache_name).\
+                first()
+    if _collection_cache:
+        db.delete(_collection_cache)
+        db.commit()
 
 
 #################### get projects info

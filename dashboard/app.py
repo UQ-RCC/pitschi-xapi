@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pitschi import config
 
-from dashboard.routers import user, projects, collections
+from dashboard.routers import user, projects, collections, cache
 from fastapi.staticfiles import StaticFiles
 
 
@@ -57,6 +57,13 @@ pitschi.include_router(
     prefix="/api",
     tags=["collections"],
     dependencies=[Depends(keycloak.decode)],
+    responses={404: {"description": "Not found"}},
+)
+
+pitschi.include_router(
+    cache.router,
+    prefix="/api",
+    tags=["cache"],
     responses={404: {"description": "Not found"}},
 )
 

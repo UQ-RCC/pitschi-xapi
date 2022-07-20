@@ -24,7 +24,7 @@
                 <v-list-item-content>
                     <v-list-item-title>Users</v-list-item-title>
                     <v-list-item-subtitle>
-                        <li v-for="item in project.userslist" :key=item>
+                        <li v-for="item in project.userslist" :key=item.username>
                             <b>username</b>: {{ item.username }} <b>email</b>: {{ item.email}}  
                             <b>userid</b>: {{ item.userid }} <b>name</b>: {{item.name}}
                         </li>

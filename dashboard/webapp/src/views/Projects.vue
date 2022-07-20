@@ -38,13 +38,13 @@
                 height="400px" width="100%"
             >
                 <template #item.projectlink="{ item }">
-                    <a target="_blank" :href="item.projectlink">
+                    <a :href="item.projectlink">
                     {{ item.id }}
                     </a>
                 </template>
 
                 <template #item.collectionlink="{ item }">
-                    <a target="_blank" :href="item.collectionlink">
+                    <a :href="item.collectionlink">
                     {{ item.collection }}
                     </a>
                 </template>
