@@ -54,18 +54,11 @@
                     <v-list-item-title class="ml-n5">Home</v-list-item-title>
                 </v-list-item>
 
-                <v-list-item to="/projects" v-if="this.is_admin">
+                <v-list-item to="/projects" v-if="this.has_dashboard_access">
                     <v-list-item-icon>
                         <v-icon>mdi-poll-box</v-icon>
                     </v-list-item-icon>
                     <v-list-item-title class="ml-n5">Projects</v-list-item-title>
-                </v-list-item>
-
-                <v-list-item to="/collections" v-if="this.is_admin">
-                    <v-list-item-icon>
-                        <v-icon>mdi-folder-multiple</v-icon>
-                    </v-list-item-icon>
-                    <v-list-item-title class="ml-n5">Collections</v-list-item-title>
                 </v-list-item>
             
 
@@ -96,8 +89,8 @@
             email: function() {
                 return this.$keycloak && this.$keycloak.idTokenParsed ? this.$keycloak.idTokenParsed.email  : ''
             },
-            is_admin: function() {
-                return this.$keycloak.hasRealmRole("superadmin")
+            has_dashboard_access: function() {
+                return this.$keycloak.hasRealmRole("dashboard")
             }
         },
         methods: {

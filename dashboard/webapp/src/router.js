@@ -2,7 +2,8 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import Home from './views/Home.vue'
 import Projects from './views/Projects.vue'
-import Collections from './views/Collections.vue'
+import Collection from './views/Collection.vue'
+import Project from './views/Project.vue'
 
 Vue.use(Router)
 
@@ -21,9 +22,14 @@ export default new Router({
             component: Projects
         },
         {
-            path: '/collections',
-            name: 'Collections',
-            component: Collections
+            path: '/project',
+            name: 'Project',
+            component: Project
+        },
+        {
+            path: '/collection',
+            name: 'Collection',
+            component: Collection
         },
         { path: '*', redirect: '/home' }  
     ]

@@ -451,6 +451,9 @@ def get_project(db: Session, projectid: int):
     return db.query(models.Project).\
             filter(models.Project.id == projectid).first()
 
+def get_project_users(db: Session, projectid: int):
+    return db.query(models.UserProject).\
+            filter(models.UserProject.projectid == projectid).all()
 
 def create_project(db: Session, aproject: schemas.Project):
     """

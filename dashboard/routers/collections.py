@@ -24,11 +24,11 @@ async def update_collection(collectionid: str, collectioncacheinfo: pdb.schemas.
         )
     else: 
         realm_access = user.get('realm_access')
-        is_superadmin = realm_access and 'superadmin' in realm_access.get('roles')
-        if not is_superadmin:
+        has_dashboard_access = realm_access and 'dashboard' in realm_access.get('roles')
+        if not has_dashboard_access:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authorised. Only superadmin can do this."
+                detail="Not authorised. Only dashboard can do this."
             )
     if collectioncacheinfo.collection_name != collectionid:
         raise HTTPException(
@@ -41,7 +41,7 @@ async def update_collection(collectionid: str, collectioncacheinfo: pdb.schemas.
 
 
 @router.get("/collections")
-async def get_ppms_projects(user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
+async def get_collections(user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -49,11 +49,11 @@ async def get_ppms_projects(user: dict = Depends(keycloak.decode), db: Session =
         )
     else: 
         realm_access = user.get('realm_access')
-        is_superadmin = realm_access and 'superadmin' in realm_access.get('roles')
-        if not is_superadmin:
+        has_dashboard_access = realm_access and 'dashboard' in realm_access.get('roles')
+        if not has_dashboard_access:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authorised. Only superadmin can do this."
+                detail="Not authorised. Only dashboard can do this."
             )
         return pdb.crud.get_collections(db)
 
@@ -68,10 +68,10 @@ async def get_ppms_projects(collectionid: str, user: dict = Depends(keycloak.dec
         )
     else: 
         realm_access = user.get('realm_access')
-        is_superadmin = realm_access and 'superadmin' in realm_access.get('roles')
-        if not is_superadmin:
+        has_dashboard_access = realm_access and 'dashboard' in realm_access.get('roles')
+        if not has_dashboard_access:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authorised. Only superadmin can do this."
+                detail="Not authorised. Only dashboard can do this."
             )
         return pdb.crud.get_collection(db, collectionid)
