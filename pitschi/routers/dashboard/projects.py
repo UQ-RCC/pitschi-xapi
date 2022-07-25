@@ -8,7 +8,7 @@ import pitschi.db as pdb
 from sqlalchemy.orm import Session
 
 from pitschi.routers import ppms_utils
-import dashboard.keycloak as keycloak
+import pitschi.keycloak as keycloak
 
 
 router = APIRouter()

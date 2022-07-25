@@ -4,9 +4,14 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import clowder, ppms, user, scheduledingest, sync_ppms_bookings, sync_ppms_projects
+
+from .routers.dashboard import projects, collections, cache
+
+
 import pitschi.config as config
 from logging.handlers import TimedRotatingFileHandler
 
+import pitschi.keycloak as keycloak
 
 logger = logging.getLogger('pitschixapi')
 logger.setLevel(logging.DEBUG)
@@ -81,4 +86,30 @@ if config.get('clowder', 'ingesting', default = "yes") == "yes":
 else:
     logger.debug("ingesting off")
 
-logger.info("Start ippuserinfo")
+###############dashboard
+pitschixapi.include_router(
+    projects.router,
+    prefix="/dashboard",
+    tags=["projects"],
+    dependencies=[Depends(keycloak.decode)],
+    responses={404: {"description": "Not found"}},
+)
+
+pitschixapi.include_router(
+    collections.router,
+    prefix="/dashboard",
+    tags=["collections"],
+    dependencies=[Depends(keycloak.decode)],
+    responses={404: {"description": "Not found"}},
+)
+
+pitschixapi.include_router(
+    cache.router,
+    prefix="/dashboard",
+    tags=["cache"],
+    responses={404: {"description": "Not found"}},
+)
+
+
+
+logger.info("Start xapi")

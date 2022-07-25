@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import pitschi.db as pdb
 from sqlalchemy.orm import Session
 
-import dashboard.keycloak as keycloak
+import pitschi.keycloak as keycloak
 
 
 router = APIRouter()
