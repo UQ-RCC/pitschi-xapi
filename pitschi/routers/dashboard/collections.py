@@ -8,7 +8,7 @@ import pitschi.db as pdb
 from sqlalchemy.orm import Session
 
 import pitschi.keycloak as keycloak
-
+import pitschi.utils as utils
 
 router = APIRouter()
 logger = logging.getLogger('pitschidashboard')
@@ -117,3 +117,14 @@ async def get_collection_caches(collectionid: str, user: dict = Depends(keycloak
         return pdb.crud.get_collection_caches(db, collectionid)
 
 
+
+@router.get("/mounts")
+async def check_fs(user: dict = Depends(keycloak.decode)):
+    logger.debug("Check fs before ingest")
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authorised"
+        )
+    else: 
+        return utils.ok_for_ingest()

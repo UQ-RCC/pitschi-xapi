@@ -2,6 +2,7 @@ import pitschi.config as config
 import datetime, pytz
 import os
 from chardet import detect
+from random import randrange
 
 def localize_time(datetimeobject):
     if datetimeobject.tzinfo:
@@ -45,3 +46,22 @@ def read_metadata(path):
     else:
         return {}
         
+
+
+def ok_for_ingest():
+    """
+    This function gets a random folder from config[prefix]
+    Then checks whether the folder is accessible
+    This is due to the fact that NFS mounts might not be accessible
+    Ingestion service needs to check this before hand
+    """
+    try:
+        _collections = os.listdir(config.get('rdm', 'prefix'))
+        if not _collections:
+            return False
+        else:
+            _random_collection = _collections[randrange(len(_collections))]
+            os.listdir(os.path.join(config.get('rdm', 'prefix'), _random_collection))
+            return True
+    except:
+        return False

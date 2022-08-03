@@ -35,7 +35,7 @@ async def sync_ppms_projects(user: dict = Depends(keycloak.decode), db: Session 
 
 
 @router.get("/projects")
-async def get_ppms_projects(full: bool = False, user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
+async def get_ppms_projects(collectioninfo: bool = False, userinfo: bool = False, user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,8 +44,8 @@ async def get_ppms_projects(full: bool = False, user: dict = Depends(keycloak.de
     else: 
         realm_access = user.get('realm_access')
         has_dashboard_access = realm_access and 'dashboard' in realm_access.get('roles')
-        if full and has_dashboard_access:
-            return pdb.crud.get_projects_full(db)
+        if has_dashboard_access:
+            return pdb.crud.get_projects_full(db, userinfo=userinfo, collectioninfo=collectioninfo) 
         else:
             return pdb.crud.get_projects(db)
 

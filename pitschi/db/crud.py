@@ -566,7 +566,8 @@ def delete_collection_cache(db: Session, collectionid: str, cache_name: str):
 
 
 #################### get projects info
-def get_projects_full(db: Session):
+# TODO: merge get_projects_full and get_projects
+def get_projects_full(db: Session, userinfo: bool = True, collectioninfo: bool = True):
     """
     Get projects and all its information: collections, users
     """
@@ -574,10 +575,12 @@ def get_projects_full(db: Session):
                 filter(models.Project.collection != None).\
                 filter(models.Project.active == True).all()
     for _project in projects:
-        _users = db.query(models.User).join(models.UserProject).filter(models.UserProject.projectid == _project.id).all()
-        _project.participants = _users
-        _caches = db.query(models.CollectionCache).filter(models.CollectionCache.collection_name == _project.collection).all()
-        _project.caches = _caches
+        if userinfo:
+            _users = db.query(models.User).join(models.UserProject).filter(models.UserProject.projectid == _project.id).all()
+            _project.participants = _users
+        if collectioninfo:
+            _caches = db.query(models.CollectionCache).filter(models.CollectionCache.collection_name == _project.collection).all()
+            _project.caches = _caches
     return projects
 
 

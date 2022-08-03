@@ -3,6 +3,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import logging
 import pitschi.db as pdb
 from sqlalchemy.orm import Session
+import pitschi.utils as utils
 
 router = APIRouter()
 logger = logging.getLogger('pitschixapi')
@@ -40,3 +41,16 @@ async def create_user(newuser: pdb.schemas.PUser, credentials: HTTPBasicCredenti
             detail="Only admin can add new users",
             headers={"WWW-Authenticate": "Basic"},
         )
+
+
+@router.get("/mounts")
+async def check_fs(credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
+    logger.debug("Check fs before ingest")
+    user = pdb.crud.get_user(db, credentials.username, credentials.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return utils.ok_for_ingest()
