@@ -322,6 +322,10 @@ def send_email(db, datasetinfo, result, messages):
 @router.on_event("startup")
 @repeat_every(seconds=60 * int(config.get('clowder', 'ingest_frequency')), wait_first=False, logger=logger)
 def ingest() -> None:
+    # first, check mount point
+    if not utils.ok_for_ingest():
+        logger.debug(">>> scheduled ingest: mount point is not ready")
+        return
     # db = SessionLocal()
     with sessionmaker.context_session() as db:
         logger.debug(">>> Repeated ingest: querying successfully imported datasets")
