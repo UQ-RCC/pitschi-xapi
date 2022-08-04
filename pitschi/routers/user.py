@@ -53,4 +53,7 @@ async def check_fs(credentials: HTTPBasicCredentials = Depends(security), db: Se
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
-    return utils.ok_for_ingest()
+    if utils.ok_for_ingest():
+        return {"status": "ready"}
+    else:
+        return {"status": "notready"}

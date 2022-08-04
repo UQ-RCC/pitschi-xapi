@@ -127,4 +127,7 @@ async def check_fs(user: dict = Depends(keycloak.decode)):
             detail="Not authorised"
         )
     else: 
-        return utils.ok_for_ingest()
+        if utils.ok_for_ingest():
+            return {"status": "ready"}
+        else:
+            return {"status": "notready"}
