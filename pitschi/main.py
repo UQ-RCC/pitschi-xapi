@@ -3,10 +3,9 @@ import logging
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import clowder, ppms, user, scheduledingest, sync_ppms_bookings, sync_ppms_projects
+from .routers import clowder, ppms, user, scheduledingest, sync_ppms_bookings, sync_ppms_projects, notification, credentials
 
 from .routers.dashboard import projects, collections, cache
-
 
 import pitschi.config as config
 from logging.handlers import TimedRotatingFileHandler
@@ -42,6 +41,20 @@ pitschixapi.add_middleware(
 pitschixapi.include_router(
     user.router, 
     tags=["user"], 
+    responses={404: {"description": "Not found"}},
+)
+
+# notification
+pitschixapi.include_router(
+    notification.router, 
+    tags=["notification"], 
+    responses={404: {"description": "Not found"}},
+)
+
+# credentials
+pitschixapi.include_router(
+    credentials.router, 
+    tags=["credentials"], 
     responses={404: {"description": "Not found"}},
 )
 
@@ -90,7 +103,7 @@ else:
 pitschixapi.include_router(
     projects.router,
     prefix="/dashboard",
-    tags=["projects"],
+    tags=["dashboard"],
     dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
@@ -98,18 +111,18 @@ pitschixapi.include_router(
 pitschixapi.include_router(
     collections.router,
     prefix="/dashboard",
-    tags=["collections"],
+    tags=["dashboard"],
     dependencies=[Depends(keycloak.decode)],
     responses={404: {"description": "Not found"}},
 )
 
+
 pitschixapi.include_router(
     cache.router,
     prefix="/dashboard",
-    tags=["cache"],
+    tags=["dashboard"],
     responses={404: {"description": "Not found"}},
 )
-
 
 
 logger.info("Start xapi")

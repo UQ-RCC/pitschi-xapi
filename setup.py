@@ -27,5 +27,6 @@ setup(
             "requests-toolbelt==0.9.1",
             "jinja2==3.0.3",
             "python-keycloak-client==0.2.3",
+            "cryptography==37.0.4"
     ]
 )

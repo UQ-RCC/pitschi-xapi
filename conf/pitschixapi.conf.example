@@ -1,6 +1,6 @@
 [database]
 type=postgresql
-host=172.17.0.2
+host=xxxx
 username=xxxx
 password=xxxx
 name=xxxx
@@ -29,9 +29,20 @@ booking_query=xxxx
 coreid=xxx
 timezone=Australia/Brisbane
 
-[clowder]
-api=xxx
+[rdm]
+prefix=xxxx
 
+[clowder]
+url=xxx
+api_url=xxxx/api
+api_key=xxxx
+ingesting=no
+ingest_frequency=30
+wait_time_to_sync=24
+
+[admin]
+admin_username=xxxx
+admin_password=xxxx
 
 [keycloak]
 server_url=xxxxxxxxxx
@@ -44,4 +55,9 @@ public_key=xxxxxxxxxxx
 
 [miscs]
 staticfolder=xxxxxxxxxxx
+teams_webhook=xxxx
 
+[creds]
+# key using to encrypt credentials - already encrypted using client_key
+encrypted_key=xxxx
+encrypted_creds=xxxx
