@@ -109,12 +109,21 @@ class Booking(BaseModel):
     class Config:
         orm_mode = True
 
-        
+class DailyTask(BaseModel):
+    id: int
+    systemid: Optional[int] = None
+    start: datetime.datetime = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+    end: datetime.datetime = None
+    status: models.Status = models.Status.ongoing
+    class Config:
+        orm_mode = True
+
 class System(BaseModel):
     id: int
     type: str
     name: str
     bookings: List[Booking] = []
+    dailytasks: List[DailyTask] = []
     class Config:
         orm_mode = True
 

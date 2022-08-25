@@ -3,7 +3,8 @@ import logging
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import clowder, ppms, user, scheduledingest, sync_ppms_bookings, sync_ppms_projects, notification, credentials
+from .routers import clowder, ppms, user, scheduledingest, credentials
+from .routers import sync_ppms_bookings, sync_ppms_projects, notification, dailytask
 
 from .routers.dashboard import projects, collections, cache
 
@@ -73,6 +74,15 @@ pitschixapi.include_router(
     tags=["clowder"],
     responses={404: {"description": "Not found"}},
 )
+
+
+# daily tasks
+pitschixapi.include_router(
+    dailytask.router, 
+    tags=["dailytask"], 
+    responses={404: {"description": "Not found"}},
+)
+
 
 # scheduledtasks
 if config.get('ppms', 'syncing_ppms_project', default = "no") == "yes":

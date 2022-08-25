@@ -102,8 +102,17 @@ class System(Base):
     type = Column(String, primary_key=False, index=False, nullable=False)
     name = Column(String, primary_key=False, index=False, nullable=False)
     bookings = relationship("Booking", back_populates="system")
+    dailytasks = relationship("DailyTask", back_populates="system")
 
-
+class DailyTask(Base):
+    __tablename__ = 'dailytask'
+    id = Column(Integer, primary_key=True, index=True)
+    systemid = Column(Integer, ForeignKey("system.id"), nullable=True)
+    system = relationship("System", back_populates="dailytasks")
+    status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
+    start = Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    end = Column(DateTime, primary_key=False, index=False, nullable=True)
+    
 class UserProject(Base):
     __tablename__ = 'userproject'
     username = Column(String, ForeignKey('user.username'), primary_key=True)

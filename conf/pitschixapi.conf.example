@@ -54,7 +54,6 @@ token_url=xxxxxxxxxxxx
 public_key=xxxxxxxxxxx
 
 [miscs]
-staticfolder=xxxxxxxxxxx
 teams_webhook=xxxx
 
 [creds]

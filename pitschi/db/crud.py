@@ -601,7 +601,7 @@ def get_collection(db: Session, collectionid: str):
     """
     Get single collection
     """
-    db.query(models.CollectionCache).\
+    return db.query(models.CollectionCache).\
         filter(models.CollectionCache.collection_name == collectionid).all()
 
 def update_collection(db: Session, collectionid: str, collectioncacheinfo: schemas.CollectionCacheBase):
@@ -627,3 +627,36 @@ def update_collection(db: Session, collectionid: str, collectioncacheinfo: schem
                         filter(models.CollectionCache.collection_name == collectionid).\
                         filter(models.CollectionCache.cache_name == collectioncacheinfo.cache_name).\
                         update(updated_cc_item.dict())
+
+
+
+
+### daily tasks
+def get_daily_tasks(db: Session, systemid: int):
+    """
+    Get daily tasks from a system
+    """
+    return db.query(models.DailyTask).\
+        filter(models.DailyTask.systemid == systemid).all()
+
+
+def add_daily_task(db: Session, task: schemas.DailyTask):
+    """
+    add daily task
+    """
+    dailytask = models.DailyTask(**task.dict())
+    db.add(dailytask)
+    db.flush()
+    db.refresh(dailytask)
+    db.commit()
+    return dailytask
+
+
+def complete_daily_task(db: Session, taskid: int, status: models.Status):
+    """
+    Comlete the task
+    """
+    db.query(models.DailyTask).\
+        filter(models.DailyTask.id == taskid).\
+        update({"status": status, "end": datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))  })
+    
