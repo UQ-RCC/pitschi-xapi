@@ -310,9 +310,9 @@ def create_system(db: Session, system: schemas.System):
     if not _a_system:
         _a_system = models.System(**system.dict())
         db.add(_a_system)
+        db.commit()
         db.flush()
         db.refresh(_a_system)
-        db.commit()
     return _a_system
 
 def get_ppms_user(db: Session, username: str):
@@ -332,8 +332,8 @@ def create_ppms_user(db: Session, auser: schemas.User):
     if not user:
         user = models.User(**auser.dict())
         db.add(user)
-        db.flush()
         db.commit()
+        db.flush()
         db.refresh(user)
     return user
     
@@ -341,9 +341,9 @@ def update_ppms_user_id(db: Session, userlogin: str, uid: int):
     _ppms_user = get_ppms_user(db, userlogin)
     if _ppms_user:
         _ppms_user.userid = uid
-        db.flush()
         db.commit()
-
+        db.flush()
+        
 
 def get_booking(db: Session, bookingid: int):
     return db.query(models.Booking).\
@@ -465,17 +465,17 @@ def create_project(db: Session, aproject: schemas.Project):
     if not project:
         project = models.Project(**aproject.dict())
         db.add(project)
+        db.commit()
         db.flush()
         db.refresh(project)
-        db.commit()
     return project
 
 def update_project_collection(db: Session, id: int, q_collection: str):
     project = get_project(db, id)
     if project:
         project.collection = q_collection
-        db.flush()
         db.commit()
+        db.flush()
 
 def get_imported_success_datasets(db: Session):
     return db.query(models.Dataset).\
@@ -523,9 +523,9 @@ def create_collection(db: Session, acollection: schemas.CollectionBase):
         logger.info(f">>>>>>>create collection: null <>>> create new one")
         collection = models.Collection(**acollection.dict())
         db.add(collection)
+        db.commit()
         db.flush()
         db.refresh(collection)
-        db.commit()
     return collection
 
 def get_collection_cache(db: Session, collection_name: str, cache_name: str):
@@ -545,9 +545,9 @@ def create_collection_cache(db: Session, acollectioncache: schemas.CollectionCac
     if not collectioncache:
         collectioncache = models.CollectionCache(**acollectioncache.dict())
         db.add(collectioncache)
+        db.commit()
         db.flush()
         db.refresh(collectioncache)
-        db.commit()
     return collectioncache
 
 
@@ -615,9 +615,9 @@ def update_collection(db: Session, collectionid: str, collectioncacheinfo: schem
         # create a new one
         collectioncache = models.CollectionCache(**collectioncacheinfo.dict())
         db.add(collectioncache)
+        db.commit()
         db.flush()
         db.refresh(collectioncache)
-        db.commit()
     else:
         existing_cc_dic = row2dict(_collection_cache_in_db, True)
         stored_cc_model = schemas.CollectionCacheBase(**existing_cc_dic)
@@ -640,15 +640,15 @@ def get_daily_tasks(db: Session, systemid: int):
         filter(models.DailyTask.systemid == systemid).all()
 
 
-def add_daily_task(db: Session, task: schemas.DailyTask):
+def add_daily_task(db: Session, task: schemas.DailyTaskBase):
     """
     add daily task
     """
     dailytask = models.DailyTask(**task.dict())
     db.add(dailytask)
+    db.commit()
     db.flush()
     db.refresh(dailytask)
-    db.commit()
     return dailytask
 
 
@@ -658,5 +658,5 @@ def complete_daily_task(db: Session, taskid: int, status: models.Status):
     """
     db.query(models.DailyTask).\
         filter(models.DailyTask.id == taskid).\
-        update({"status": status, "end": datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))  })
+        update({"status": status, "finished": datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))  })
     

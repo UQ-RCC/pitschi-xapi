@@ -22,8 +22,8 @@ async def get_dailytask(systemid: int,
     return pdb.crud.get_daily_tasks(db, systemid)
 
 
-@router.post("/dailytask/{systemid}")
-async def add_dailytask(systemid: int, task: pdb.schemas.DailyTask, 
+@router.post("/dailytask")
+async def add_dailytask(task: pdb.schemas.DailyTaskBase, 
                         credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
     logger.debug("Add new daily tasks")
     user = pdb.crud.get_user(db, credentials.username, credentials.password)
@@ -32,12 +32,6 @@ async def add_dailytask(systemid: int, task: pdb.schemas.DailyTask,
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
-        )
-    if task.systemid != systemid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Systemid not match",
-            headers={"WWW-Authenticate": "Basic"}
         )
     return pdb.crud.add_daily_task(db, task)
 
