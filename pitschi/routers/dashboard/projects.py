@@ -77,3 +77,27 @@ async def get_ppms_projects(projectid: int, user: dict = Depends(keycloak.decode
                 _project.userslist = _users
                 logger.debug (str(_users))
             return _project
+
+
+
+@router.get("/stats")
+async def get_system_stats(field: str="syncing_projects", user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authorised"
+        )
+    else: 
+        realm_access = user.get('realm_access')
+        has_dashboard_access = realm_access and 'dashboard' in realm_access.get('roles')
+        if has_dashboard_access:
+            field_value = pdb.crud.get_stat(db, field) 
+            if not field_value:
+                return {field: ""}
+            else:
+                return {field: eval(field_value.value)}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authorised"
+            )

@@ -659,4 +659,3 @@ def complete_daily_task(db: Session, taskid: int, status: models.Status):
     db.query(models.DailyTask).\
         filter(models.DailyTask.id == taskid).\
         update({"status": status, "finished": datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))  })
-    
