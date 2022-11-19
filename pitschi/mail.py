@@ -9,22 +9,24 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 def connect_smtp():
-    connection = smtplib.SMTP(  config.get('email', 'smtp_server'), 
-                                config.get('email', 'smtp_port')
-                            )
-    if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
-        context=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.set_ciphers('DEFAULT@SECLEVEL=1')
-    connection.ehlo()
-    if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
-        connection.starttls(context=context)
-    else:
-        connection.starttls()
-    connection.ehlo()
-    connection.login(config.get('email', 'username'), config.get('email', 'password'))
+    connection = smtplib.SMTP(config.get('email', 'smtp_server'),
+            config.get('email', 'smtp_port'))
+    if config.getboolean('email', 'smtp_tls', default=True):
+        if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
+            context=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            context.set_ciphers('DEFAULT@SECLEVEL=1')
+        connection.ehlo()
+        if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
+            connection.starttls(context=context)
+        else:
+            connection.starttls()
+    username, passwd = config.get('email', 'username'), config.get('email', 'password')
+    if username and passwd:
+        connection.ehlo()
+        connection.login(username, passwd)
     return connection
 
-def send_mail(to_address, subject, contents, subtype='html'):
+def send_mail(to_address, subject, contents, subtype='html', cc_from=True):
     """
     Send email
     """
@@ -50,6 +52,8 @@ def send_mail(to_address, subject, contents, subtype='html'):
         email['Subject'] = subject
         email['From'] = config.get('email', 'address')
         email['To'] = to_address
+        if cc_from:
+            email['Cc'] = config.get('email', 'address')
         email.set_content(contents, subtype=subtype)
         connection.send_message(email)
     finally:
