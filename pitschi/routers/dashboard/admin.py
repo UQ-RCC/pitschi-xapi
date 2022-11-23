@@ -14,7 +14,7 @@ router = APIRouter()
 logger = logging.getLogger('pitschidashboard')
 
 @router.get("/resetSync")
-async def rest_ppms_sync_stats(user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
+async def reset_ppms_sync_stats(user: dict = Depends(keycloak.decode), db: Session = Depends(pdb.get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -28,6 +28,9 @@ async def rest_ppms_sync_stats(user: dict = Depends(keycloak.decode), db: Sessio
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authorised. Only dashboard can do this."
             )
-    logger.debug(">>>>>>>>>>>> Reset PPMS Sync status")
-    pdb.crud.set_stat(db, name='syncing_projects', value='False')
+        else:
+            _syncing_stat = pdb.crud.get_stat(db, "syncing_projects") 
+            if _syncing_stat and _syncing_stat.value == "True":
+                logger.debug(">>>>>>>>>>>> Reset PPMS Sync status")
+                pdb.crud.set_stat(db, name='syncing_projects', value='False')
 
