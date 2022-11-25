@@ -6,7 +6,7 @@ To run pitschi: uvicorn pitschi.main:pitschixapi --host 0.0.0.0 --port 8000 --ro
 
 #To run dashboard: uvicorn dashboard.app:pitschi --host 0.0.0.0 --port 8001
 
-# developement instructions
+# Developement instructions
 ### Steps to run xpi on VM:
 
 1. Follow instructions to install Python on the VM. (If you install Python version 3.4 or later, PIP is included by default, otherwise, install pip)
