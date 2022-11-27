@@ -25,7 +25,7 @@ sessionmaker = FastAPISessionMaker(database_uri)
 @repeat_every(seconds=60 * int(config.get('ppms', 'booking_sync_minute')), wait_first=False, logger=logger)
 def sync_ppms_bookings() -> None:
     # db = SessionLocal()
-    logger.debug("<<<<<<<<<<<<<< Start syncing PPMS projects")
+    logger.debug("<<<<<<<<<<<<<< Start syncing PPMS bookings")
     with sessionmaker.context_session() as db:
         logger.debug("query ppms bookings of today")
         _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()

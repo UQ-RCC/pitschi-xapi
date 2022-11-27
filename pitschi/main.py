@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import clowder, ppms, user, scheduledingest, credentials
 from .routers import sync_ppms_bookings, sync_ppms_projects, notification, dailytask
 
-from .routers.dashboard import projects, collections, cache
+from .routers.dashboard import projects, collections, cache, admin
 
 import pitschi.config as config
 from logging.handlers import TimedRotatingFileHandler
@@ -133,6 +133,14 @@ pitschixapi.include_router(
     tags=["dashboard"],
     responses={404: {"description": "Not found"}},
 )
+
+pitschixapi.include_router(
+    admin.router,
+    prefix="/dashboard",
+    tags=["dashboard"],
+    responses={404: {"description": "Not found"}},
+)
+
 
 
 logger.info("Start xapi")
