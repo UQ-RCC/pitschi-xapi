@@ -26,7 +26,7 @@ def connect_smtp():
         connection.login(username, passwd)
     return connection
 
-def send_mail(to_address, subject, contents, subtype='html', cc_from=True):
+def send_mail(to_address, subject, contents, subtype='html', to_sender=True, cc_sender=False):
     """
     Send email
     """
@@ -49,11 +49,15 @@ def send_mail(to_address, subject, contents, subtype='html', cc_from=True):
     ### send the email
     try:
         email = EmailMessage()
+        sender = config.get('email', 'address')
         email['Subject'] = subject
-        email['From'] = config.get('email', 'address')
-        email['To'] = to_address
-        if cc_from:
-            email['Cc'] = config.get('email', 'address')
+        email['From'] = sender
+        if to_sender:
+            email['To'] = to_address+','+sender
+        else:
+            email['To'] = to_address
+        if cc_sender:
+            email['Cc'] = sender
         email.set_content(contents, subtype=subtype)
         connection.send_message(email)
     finally:
