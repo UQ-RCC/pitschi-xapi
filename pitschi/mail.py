@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def connect_smtp():
     connection = smtplib.SMTP(config.get('email', 'smtp_server'),
             config.get('email', 'smtp_port'))
-    if config.getboolean('email', 'smtp_tls', default=True):
+    if config.get('email', 'smtp_tls', default='True').lower() == 'true':
         if config.get('email', 'smtp_server') == 'smtp.uq.edu.au':
             context=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
             context.set_ciphers('DEFAULT@SECLEVEL=1')
