@@ -91,11 +91,12 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
             return (False, ["Fail to query Clowder space"])
     if dataset.space:
         if not dataset.datasetid:
-            logger.debug(f"finding dataset")
+            logger.debug(f"finding dataset: {dataset.name}")
             res = clowderful.list_dataset_in_space(_clowder_key, _clowder_api_url, dataset.space)
             if res.ok:
                 _clwddatasets = res.json()
                 for _clwddataset in _clwddatasets:
+                    logger.debug(f"found dataset: {_clwddataset.get('name')}")
                     if _clwddataset.get('name') == dataset.name:
                         # only update datasetid
                         pdb.crud.update_dataset_space_datasetid(db, dataset.id, None, _clwddataset.get('id'))
