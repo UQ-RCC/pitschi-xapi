@@ -45,7 +45,7 @@ def get_spaces(key, api_url, name, canedit=True):
     if canedit:
         url = f"{url}/canEdit"
     else:
-        url = f"{url}?name={name}&limit=100"
+        url = f"{url}?name={name}&limit=10000"
     return _get(url, key)
 
 ##################### dataset ###########################
