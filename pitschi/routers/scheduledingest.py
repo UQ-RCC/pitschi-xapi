@@ -253,7 +253,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
 
 def send_email(db, datasetinfo, result, messages):
     if result:
-        title = f"Successully ingested dataset"
+        title = f"Successfully ingested dataset"
         to_address = datasetinfo.user.email
         # if assistant is present, then sent email to assisant
         if datasetinfo.booking and datasetinfo.booking.assistant:
@@ -261,7 +261,7 @@ def send_email(db, datasetinfo, result, messages):
         pitschi_url = f"{config.get('clowder', 'url')}/datasets/{datasetinfo.datasetid}?space={datasetinfo.space}"
         _relpathfromrootcollection = datasetinfo.relpathfromrootcollection.replace("\\", "/")
         cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
-        samba_url=f"smb://data.qbi.uq.edu.au/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
+        samba_url = 'smb:' + datasetinfo.networkpath.replace('\\', '/')
         contents = f"""
         <html>
             <head></head>
