@@ -155,7 +155,7 @@ def send_import_email(db, _dataset_info):
     if _dataset_info.booking and _dataset_info.booking.assistant:
         _to_address = get_ppms_user(db, _dataset_info.booking.assistant)
     _cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
-    _samba_url = 'smb:' + datasetinfo.networkpath.replace('\\', '/')
+    _samba_url = 'smb:' + _dataset_info.networkpath.replace('\\', '/')
     _contents = f"""
                 <html>
                     <head></head>
