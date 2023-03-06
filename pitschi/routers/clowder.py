@@ -153,3 +153,9 @@ async def get_booking_datasets(bookingid: int, \
         if dataset.modified:
             dataset.modified = utils.convert_to_xapi_tz(dataset.modified)
     return datasets
+
+
+
+@router.get("/api")
+async def get_api_path():
+    return config.get('clowder', 'api_url')
