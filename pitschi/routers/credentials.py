@@ -12,7 +12,7 @@ security = HTTPBasic()
 
 
 @router.get("/creds/{field}")
-async def get_encypted_clowderkey(field: str, credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
+async def get_encypted_creds(field: str, credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
     logger.debug("Get creds field")
     if field not in config.config.options('creds'):
         raise HTTPException(
@@ -30,7 +30,7 @@ async def get_encypted_clowderkey(field: str, credentials: HTTPBasicCredentials 
     return config.get('creds', field)
 
 @router.get("/creds_oidc/{field}")
-async def get_encypted_clowderkey_oidc(field: str, user: dict = Depends(keycloak.decode)):
+async def get_encypted_creds_oidc(field: str, user: dict = Depends(keycloak.decode)):
     """
     get the key (encyrpted) used to decrypt credentials - using oidc
     """
@@ -54,4 +54,6 @@ async def get_encypted_clowderkey_oidc(field: str, user: dict = Depends(keycloak
             )
     return config.get('creds', field)
 
-
+@router.get("/clowder_api_url")
+async def get_clowder_api_url():
+    return config.get('clowder', 'api_url')
