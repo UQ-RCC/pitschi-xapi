@@ -257,7 +257,7 @@ def send_email(db, datasetinfo, result, messages):
         to_address = datasetinfo.user.email
         # if assistant is present, then sent email to assisant
         if datasetinfo.booking and datasetinfo.booking.assistant:
-            to_address = pdb.crud.get_ppms_user(db, datasetinfo.booking.assistant)
+            to_address = pdb.crud.get_ppms_user(db, datasetinfo.booking.assistant).email
         pitschi_url = f"{config.get('clowder', 'url')}/datasets/{datasetinfo.datasetid}?space={datasetinfo.space}"
         _relpathfromrootcollection = datasetinfo.relpathfromrootcollection.replace("\\", "/")
         cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
