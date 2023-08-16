@@ -57,3 +57,18 @@ async def get_encypted_creds_oidc(field: str, user: dict = Depends(keycloak.deco
 @router.get("/clowder_api_url")
 async def get_clowder_api_url():
     return config.get('clowder', 'api_url')
+
+@router.get("/ppms_config")
+async def get_ppms_config(field: str, credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
+    logger.debug("Get ppms config")
+    user = pdb.crud.get_user(db, credentials.username, credentials.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    # allowed unencrypted field list excludes keys
+    allowed_fields = ['booking_query', 'coreid', 'ppms_url', 'project_starting_ref',
+        'q_collection_field', 'qcollection_action', 'timezone']
+    return { f: config.get('ppms', f) for f in allowed_fields }
