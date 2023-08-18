@@ -58,9 +58,9 @@ async def get_encypted_creds_oidc(field: str, user: dict = Depends(keycloak.deco
 async def get_clowder_api_url():
     return config.get('clowder', 'api_url')
 
-@router.get("/ppms_config")
-async def get_ppms_config(field: str, credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
-    logger.debug("Get ppms config")
+@router.get("/ppms_api_config")
+async def get_ppms_api_config(credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
+    logger.debug("Get ppms api config")
     user = pdb.crud.get_user(db, credentials.username, credentials.password)
     if not user:
         raise HTTPException(
