@@ -138,7 +138,7 @@ def sync_ppms_bookings() -> None:
                                 pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
                                 # create one its, one imb by default
                                 pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='its'))
-                                pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='qbi', priority=1))    
+                                pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='imb', priority=1))
                                 pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
                         # now with project users
                         # _project_users = get_project_user(_project_in_db.id)
