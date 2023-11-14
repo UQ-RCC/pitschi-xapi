@@ -166,67 +166,68 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                     _to_ignore = True
             _file_fullpath = os.path.join(root, file)
             logger.debug(f"Looking into: {_file_fullpath}")
-            if not _to_ignore:
-                logger.debug(f"Start processing: {_file_fullpath}")
-                _parent_folder_id = folders.get(root)
-                # since rel path is windows
-                if  dataset_root.endswith("/"):
-                    _file_rel_path = _file_fullpath.replace(dataset_root, "").replace("/", "\\")
-                else:
-                    _file_rel_path = _file_fullpath.replace(f"{dataset_root}/", "").replace("/", "\\")    
-                # ingest
-                _file_rel_path = _file_rel_path.lower()
-                _to_be_ingested = True
-                _file_object = None
-                if _file_rel_path in file_items:
-                    _file_object = file_items.pop(_file_rel_path)
-                    if (_file_object.mode == pdb.models.Mode.ingested and _file_object.status == pdb.models.Status.success ) or \
-                       _file_object.mode == pdb.models.Mode.intransit or \
-                       (_file_object.mode == pdb.models.Mode.imported and _file_object.status != pdb.models.Status.success ):
-                        logger.debug(f"File {_file_fullpath} either already ingested or not ready to be ingested")
-                        _to_be_ingested = False
-                if _to_be_ingested:
-                    try:
-                        _fileinfo = clowderful.add_server_file(_clowder_key, _clowder_api_url, dataset.datasetid, _file_fullpath, check_duplicate=True, parent_folderid=_parent_folder_id)
-                        logger.info(f"Done ingesting clowder file {_fileinfo}")
-                        # update database
-                        if _file_object:
-                            # update ri
-                            pdb.crud.update_file(db, _file_object.id, \
-                                            {   'status': pdb.models.Status.success, \
-                                                'mode': pdb.models.Mode.ingested, \
-                                                'fileid':  _fileinfo.get('id'), \
-                                                'finished': datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) \
-                                            })
-                        else:
-                            logger.info(f"------>File {_file_fullpath} not in database, ingest it")
-                            _newfile = pdb.crud.schemas.FileCreate(path=_file_rel_path, \
-                                                                size_kb=os.stat(_file_fullpath).st_size/1024.0 ,\
-                                                                status=pdb.models.Status.success, \
-                                                                mode=pdb.models.Mode.ingested,\
-                                                                dataset_id=dataset.id,\
-                                                                fileid= _fileinfo.get('id'),\
-                                                                finished=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
-                            # new file
-                            pdb.crud.create_file(db, _newfile)
-                    except Exception as e:
-                        logger.error(f"Problem {e}")
-                        if _file_object:
-                            pdb.crud.update_file_mode_status(db, _file_object.id, pdb.models.Mode.ingested, pdb.models.Status.failed)    
-                        else:
-                            logger.info(f"------>File {_file_fullpath} not in database, report fail")
-                            _newfile = pdb.crud.schemas.FileCreate(path=_file_rel_path, \
-                                                                size_kb=os.stat(_file_fullpath).st_size/1024.0 ,\
-                                                                status=pdb.models.Status.failed, \
-                                                                mode= pdb.models.Mode.ingested,\
-                                                                dataset_id=dataset.id,\
-                                                                fileid= _fileinfo.get('id'),\
-                                                                finished=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
-                            # new file
-                            pdb.crud.create_file(db, _newfile)
-                        _dataset_ingest_successful = False
-                        _error_message.append( f"Exception when ingesting file: {e}" )
-                        logger.debug (f">>>Exception at creating file {e}")
+            logger.debug(f"Start processing: {_file_fullpath}")
+            _parent_folder_id = folders.get(root)
+            # since rel path is windows
+            if  dataset_root.endswith("/"):
+                _file_rel_path = _file_fullpath.replace(dataset_root, "").replace("/", "\\")
+            else:
+                _file_rel_path = _file_fullpath.replace(f"{dataset_root}/", "").replace("/", "\\")
+            # ingest
+            _file_rel_path = _file_rel_path.lower()
+            _to_be_ingested = True
+            _file_object = None
+            if _file_rel_path in file_items:
+                _file_object = file_items.pop(_file_rel_path)
+                if _to_ignore:
+                    continue
+                if (_file_object.mode == pdb.models.Mode.ingested and _file_object.status == pdb.models.Status.success ) or \
+                   _file_object.mode == pdb.models.Mode.intransit or \
+                   (_file_object.mode == pdb.models.Mode.imported and _file_object.status != pdb.models.Status.success ):
+                    logger.debug(f"File {_file_fullpath} either already ingested or not ready to be ingested")
+                    _to_be_ingested = False
+            if _to_be_ingested:
+                try:
+                    _fileinfo = clowderful.add_server_file(_clowder_key, _clowder_api_url, dataset.datasetid, _file_fullpath, check_duplicate=True, parent_folderid=_parent_folder_id)
+                    logger.info(f"Done ingesting clowder file {_fileinfo}")
+                    # update database
+                    if _file_object:
+                        # update ri
+                        pdb.crud.update_file(db, _file_object.id, \
+                                        {   'status': pdb.models.Status.success, \
+                                            'mode': pdb.models.Mode.ingested, \
+                                            'fileid':  _fileinfo.get('id'), \
+                                            'finished': datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) \
+                                        })
+                    else:
+                        logger.info(f"------>File {_file_fullpath} not in database, ingest it")
+                        _newfile = pdb.crud.schemas.FileCreate(path=_file_rel_path, \
+                                                            size_kb=os.stat(_file_fullpath).st_size/1024.0 ,\
+                                                            status=pdb.models.Status.success, \
+                                                            mode=pdb.models.Mode.ingested,\
+                                                            dataset_id=dataset.id,\
+                                                            fileid= _fileinfo.get('id'),\
+                                                            finished=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+                        # new file
+                        pdb.crud.create_file(db, _newfile)
+                except Exception as e:
+                    logger.error(f"Problem {e}")
+                    if _file_object:
+                        pdb.crud.update_file_mode_status(db, _file_object.id, pdb.models.Mode.ingested, pdb.models.Status.failed)
+                    else:
+                        logger.info(f"------>File {_file_fullpath} not in database, report fail")
+                        _newfile = pdb.crud.schemas.FileCreate(path=_file_rel_path, \
+                                                            size_kb=os.stat(_file_fullpath).st_size/1024.0 ,\
+                                                            status=pdb.models.Status.failed, \
+                                                            mode= pdb.models.Mode.ingested,\
+                                                            dataset_id=dataset.id,\
+                                                            fileid= _fileinfo.get('id'),\
+                                                            finished=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+                        # new file
+                        pdb.crud.create_file(db, _newfile)
+                    _dataset_ingest_successful = False
+                    _error_message.append( f"Exception when ingesting file: {e}" )
+                    logger.debug (f">>>Exception at creating file {e}")
     # end for loop
     logger.debug(f"Done ingesting files, the files items left: {file_items}")
     if _dataset_ingest_successful:
@@ -338,7 +339,7 @@ def ingest() -> None:
                     logger.debug(f"Processing dataset {_dataset.id}")
                     pdb.crud.update_dataset_mode_status(db, _dataset.id, pdb.models.Mode.ingested, pdb.models.Status.ongoing)
                     (result, messages) = ingest_dataset_to_clowder(db, _dataset, _project, logger)
-                    logger.debug(f"Done ingsting, result: {result} \n messages: {messages}")
+                    logger.debug(f"Done ingesting, result: {result} \n messages: {messages}")
                     # send an email
                     _dataset_info = pdb.crud.summarize_dataset_info(db, _dataset.id)
                     if _dataset_info:
@@ -353,5 +354,5 @@ def ingest() -> None:
                 else:
                     logger.info(f"project {_project.name} does not have all files in this cache")
             else:
-                logger.error(f"schduled ingestg: Error: Cannot find project for booking {_dataset.bookingid}")
+                logger.error(f"scheduled ingest: Error: Cannot find project for booking {_dataset.bookingid}")
         # db.close()
