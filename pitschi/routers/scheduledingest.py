@@ -35,34 +35,20 @@ def check_all_files_in_dataset(db, dataset, project, logger):
     # do a walk over: /prefix/QCollection/dataset
     _relpathfromrootcollection = dataset.relpathfromrootcollection.replace("\\", "/")
     dataset_root = f"{config.get('rdm', 'prefix', default='/data')}/{qcollection}/{_relpathfromrootcollection}"
-    ignore_folders = []
     for root, dirs, files in os.walk(dataset_root, topdown = True):
-        # go to clowder and create those
-        for dir in dirs:
-            _current_dir_fullpath = os.path.join(root, dir)
-            if dir.startswith('.'):
-                ignore_folders.append(_current_dir_fullpath)
-                continue
-        ### files
         for file in files:
-            _to_ignore = file.startswith('.')
-            for folder in ignore_folders:
-                if folder in root:
-                    _to_ignore = True
             _file_fullpath = os.path.join(root, file)
-            if not _to_ignore:
-                # since rel path is windows
-                if  dataset_root.endswith("/"):
-                    _file_rel_path = _file_fullpath.replace(dataset_root, "").replace("/", "\\")
-                else:
-                    _file_rel_path = _file_fullpath.replace(f"{dataset_root}/", "").replace("/", "\\")    
-                # ingest
-                _file_rel_path = _file_rel_path.lower()
-                try:
-                    logger.debug(f"Removing fullpath: {_file_fullpath} rel path: {_file_rel_path}")
-                    file_items.pop(_file_rel_path)
-                except: 
-                    pass
+            # since rel path is windows
+            if  dataset_root.endswith("/"):
+                _file_rel_path = _file_fullpath.replace(dataset_root, "").replace("/", "\\")
+            else:
+                _file_rel_path = _file_fullpath.replace(f"{dataset_root}/", "").replace("/", "\\")
+            _file_rel_path = _file_rel_path.lower()
+            try:
+                logger.debug(f"Removing fullpath: {_file_fullpath} rel path: {_file_rel_path}")
+                file_items.pop(_file_rel_path)
+            except:
+                pass
     logger.debug(f"Left over file items: {file_items}")
     return (len(file_items) == 0)
     
