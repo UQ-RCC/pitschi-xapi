@@ -81,7 +81,7 @@ def get_datasets_from_original(db: Session, username: str, origmachine: str, ori
             filter(models.Dataset.origionalmachine == origmachine).\
             filter(models.Dataset.origionalpath == origpath).\
         join(models.Dataset.booking).\
-            filter(models.Booking.username == username).all()
+            filter(or_(models.Booking.username == username, models.Booking.assistant == username)).all()
 
 def get_datasets_from_one_machine(db: Session, username: str, origmachine: str, date: datetime.date):
     return db.query(models.Dataset).\
@@ -344,6 +344,13 @@ def update_ppms_user_id(db: Session, userlogin: str, uid: int):
         db.commit()
         db.flush()
         
+
+def update_ppms_user_email(db: Session, userlogin: str, email: str):
+    _ppms_user = get_ppms_user(db, userlogin)
+    if _ppms_user:
+        _ppms_user.email = email
+        db.commit()
+        db.flush()
 
 def get_booking(db: Session, bookingid: int):
     return db.query(models.Booking).\
