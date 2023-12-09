@@ -172,7 +172,7 @@ def sync_ppms_bookings() -> None:
                                 _user_info = get_ppms_user(_db_user.username)
                                 _ppms_email = _user_info.get('email')
                                 if _db_user.email != _ppms_email:
-                                    logger.debug(f'User {_db_user.username} ppms email mismatch...'
+                                    logger.debug(f'User {_db_user.username} ppms email mismatch...')
                                     logger.debug(f'  updating {_db_user.email} to {_ppms_email}')
                                     pdb.crud.update_ppms_user_email(db, _db_user.username, _ppms_email)
                                     _db_user = pdb.crud.get_ppms_user(db, _db_user.username)
@@ -218,7 +218,7 @@ def sync_ppms_bookings() -> None:
                                                     name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
                                                     email = _user_info.get('email') \
                                                 )
-                                                logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
+                                                logger.debug(f"User {_user_info.get('login')} does not exist, create new one")
                                                 _db_user = pdb.crud.create_ppms_user(db, _user_schema)
                                                 _booking_objects[_system_booking_id].assistant = _user_info.get('login')
                                     else:
