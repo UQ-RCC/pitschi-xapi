@@ -76,9 +76,9 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
                 logger.debug(f"{_project_user} is empty. ignore")
                 continue
             _db_user = pdb.crud.get_ppms_user(db, _project_user)
+            _user_info = get_ppms_user(_project_user)
             if not _db_user:
                 logger.debug(f"User :{_project_user} not exists, query ppms")
-                _user_info = get_ppms_user(_project_user)
                 _user_schema = pdb.schemas.User(\
                                     username = _user_info.get('login'),\
                                     userid = _project_member.get("id"),\
@@ -90,6 +90,13 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
             if not _db_user.userid:
                 # update it
                 pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
+            # check if email needs to be updated in db
+            _ppms_email = _user_info.get('email')
+            if _db_user.email != _ppms_email:
+                logger.debug(f'User {_db_user.username} ppms email mismatch...')
+                logger.debug(f'  updating {_db_user.email} to {_ppms_email}')
+                pdb.crud.update_ppms_user_email(db, _db_user.username, _ppms_email)
+                _db_user = pdb.crud.get_ppms_user(db, _db_user.username)
             # add to userproject if not exists           
             pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
                                                 username = _db_user.username,\

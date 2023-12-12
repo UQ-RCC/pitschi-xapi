@@ -167,15 +167,6 @@ def sync_ppms_bookings() -> None:
                                                                 projectid = _project_in_db.id ) )
                             if not _db_user.userid:
                                 pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
-                            if _db_user.email != _system_booking.get('userEmail'):
-                                # get ppms user info and check if email needs to be updated in db
-                                _user_info = get_ppms_user(_db_user.username)
-                                _ppms_email = _user_info.get('email')
-                                if _db_user.email != _ppms_email:
-                                    logger.debug(f'User {_db_user.username} ppms email mismatch...')
-                                    logger.debug(f'  updating {_db_user.email} to {_ppms_email}')
-                                    pdb.crud.update_ppms_user_email(db, _db_user.username, _ppms_email)
-                                    _db_user = pdb.crud.get_ppms_user(db, _db_user.username)
                             if _db_user.email == _system_booking.get('userEmail'):
                                 logger.debug(f">>>>{_booking_objects[_system_booking_id]}")
                                 logger.debug(f">>>>assistance: {_booking_objects[_system_booking_id].assistant}")
