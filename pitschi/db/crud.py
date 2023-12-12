@@ -484,6 +484,13 @@ def update_project_collection(db: Session, id: int, q_collection: str):
         db.commit()
         db.flush()
 
+def update_project_name(db: Session, id: int, name: str):
+    project = get_project(db, id)
+    if project:
+        project.name = name
+        db.commit()
+        db.flush()
+
 def get_imported_success_datasets(db: Session):
     return db.query(models.Dataset).\
             filter(models.Dataset.mode == models.Mode.imported).\
