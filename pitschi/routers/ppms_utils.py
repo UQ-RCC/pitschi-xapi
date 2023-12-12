@@ -58,6 +58,14 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
             if not _project_in_db.collection:        
                 pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
 
+        # check for project name update
+        _project_name = project.get('ProjectName')
+        if _project_in_db.name != _project_name:
+            logger.debug(f'Project id {_project_in_db.id} name mismatch...')
+            logger.debug(f'  updating "{_project_in_db.name}" to "{_project_name}"')
+            pdb.crud.update_project_name(db, _project_in_db.id, _project_name)
+            _project_in_db = pdb.crud.get_project(db, _project_in_db.id)
+
         # now with project users
         _project_members = get_project_members(_project_in_db.id)
         logger.debug(f"project {_project_in_db.id} users:{_project_members}")
