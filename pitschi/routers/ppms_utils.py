@@ -2,7 +2,7 @@ import logging
 import pitschi.config as config
 import datetime, pytz
 import pitschi.db as pdb
-from pitschi.ppms import get_ppms_user, get_systems, get_projects, get_rdm_collection, get_project_members
+from pitschi.ppms import get_ppms_user, get_ppms_users, get_systems, get_projects, get_rdm_collection, get_project_members
 from sqlalchemy.orm import Session
 
 
@@ -26,6 +26,9 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
                                                 name=systems.get(system).get('systemname'), \
                                                 type=systems.get(system).get('systemtype') \
                                             ))
+    users = get_ppms_users(config.get('ppms', 'coreid'))
+    # convert to dict to allow easy lookup by login
+    _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"] } for u in users }
     projects = get_projects()
     #now get projects
     for project in projects:
@@ -76,22 +79,21 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
                 logger.debug(f"{_project_user} is empty. ignore")
                 continue
             _db_user = pdb.crud.get_ppms_user(db, _project_user)
-            _user_info = get_ppms_user(_project_user)
             if not _db_user:
                 logger.debug(f"User :{_project_user} not exists, query ppms")
                 _user_schema = pdb.schemas.User(\
-                                    username = _user_info.get('login'),\
-                                    userid = _project_member.get("id"),\
-                                    name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
-                                    email = _user_info.get('email') )
-                logger.debug(f"User :{_user_info.get('login')} not exists, create new one")
+                                    username = _project_user,\
+                                    userid = _users_info[_project_user].get("id"),\
+                                    name = _users_info[_project_user].get("name"),\
+                                    email = _users_info[_project_user].get('email') )
+                logger.debug(f"User :{_users_info.get('login')} not exists, create new one")
                 _db_user = pdb.crud.create_ppms_user(db, _user_schema)
-                logger.debug(f"User :{_user_info.get('login')} added to database")
+                logger.debug(f"User :{_users_info.get('login')} added to database")
             if not _db_user.userid:
                 # update it
                 pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
             # check if email needs to be updated in db
-            _ppms_email = _user_info.get('email')
+            _ppms_email = _users_info[_project_user].get('email')
             if _db_user.email != _ppms_email:
                 logger.debug(f'User {_db_user.username} ppms email mismatch...')
                 logger.debug(f'  updating {_db_user.email} to {_ppms_email}')

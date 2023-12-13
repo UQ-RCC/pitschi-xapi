@@ -39,6 +39,21 @@ def get_ppms_user_by_id(uid:int, coreid:int):
     return []
 
 
+def get_ppms_users(coreid:int):
+    logger.debug("@get_ppms_users: Querying all ppms users")
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report1335&coreid={coreid}"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code == 204:
+            return []
+        else:
+            return response.json(strict=False)
+    return []
+
 
 def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.date):
     logger.debug("@get_daily_bookings_one_system: Querying booking of a certain date")
