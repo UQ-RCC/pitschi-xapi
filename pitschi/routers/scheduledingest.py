@@ -141,7 +141,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
             if dir.startswith('.'):
                 ignore_folders.append(_current_dir_fullpath)
                 continue
-            _current_dir_relativepath = _current_dir_fullpath.strip(dataset_root)
+            _current_dir_relativepath = _current_dir_fullpath.removeprefix(dataset_root)
             _parent_folder_id = folders.get(root)
             # search for existing folders
             _exist = False
