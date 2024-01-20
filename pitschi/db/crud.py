@@ -10,7 +10,7 @@ import pitschi.config as config
 import pitschi.utils as utils
 import logging
 import pitschi.mail as mail
-import os, json
+import json, os, re
 logger = logging.getLogger('pitschixapi')
 
 class PermissionException(Exception):
