@@ -145,9 +145,12 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
             send_import_email(db, _dataset_info)
         logger.debug('create dataset: dataset file listing from rdm collection...')
         if dataset.networkpath:
-            path = re.sub('^//[^/]*/[^/]*-([^-/]*/)', r'/data/\1', dataset.networkpath.replace('\\', '/'))
-            if (os.path.exists(path)):
-                logger.debug(json.dumps([os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]))
+            try:
+                path = re.sub('^//[^/]*/[^/]*-([^-/]*/)', r'/data/\1', dataset.networkpath.replace('\\', '/'))
+                if (os.path.exists(path)):
+                    logger.debug(json.dumps([os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]))
+            except:
+                pass
     return datasetModel
 
 
@@ -297,10 +300,13 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
             if _dataset_info:
                 send_import_email(db, _dataset_info)
         if dataset.mode == models.Mode.imported and dataset.status == models.Status.success and dataset.networkpath:
-            logger.debug('update_dataset: dataset file listing from rdm collection...')
-            path = re.sub('^//[^/]*/[^/]*-([^-/]*/)', r'/data/\1', dataset.networkpath.replace('\\', '/'))
-            if (os.path.exists(path)):
-                logger.debug(json.dumps([os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]))
+            try:
+                logger.debug('update_dataset: dataset file listing from rdm collection...')
+                path = re.sub('^//[^/]*/[^/]*-([^-/]*/)', r'/data/\1', dataset.networkpath.replace('\\', '/'))
+                if (os.path.exists(path)):
+                    logger.debug(json.dumps([os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]))
+            except:
+                pass
 
         
 ############# ppms
