@@ -10,7 +10,6 @@ import pitschi.config as config
 import pitschi.utils as utils
 import logging
 import pitschi.mail as mail
-import json, os, re
 logger = logging.getLogger('pitschixapi')
 
 class PermissionException(Exception):
@@ -143,14 +142,6 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
         _dataset_info = summarize_dataset_info(db, datasetModel.id)
         if _dataset_info:
             send_import_email(db, _dataset_info)
-        logger.debug('create dataset: dataset file listing from rdm collection...')
-        if dataset.networkpath:
-            try:
-                path = re.sub('^//[^/]*/[^/]*-([^-/]*/)', r'/data/\1', dataset.networkpath.replace('\\', '/'))
-                if (os.path.exists(path)):
-                    logger.debug(json.dumps([os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]))
-            except:
-                pass
     return datasetModel
 
 
@@ -299,14 +290,6 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
             _dataset_info = summarize_dataset_info(db, datasetid)
             if _dataset_info:
                 send_import_email(db, _dataset_info)
-        if dataset.mode == models.Mode.imported and dataset.status == models.Status.success and dataset.networkpath:
-            try:
-                logger.debug('update_dataset: dataset file listing from rdm collection...')
-                path = re.sub('^//[^/]*/[^/]*-([^-/]*/)', r'/data/\1', dataset.networkpath.replace('\\', '/'))
-                if (os.path.exists(path)):
-                    logger.debug(json.dumps([os.path.join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]))
-            except:
-                pass
 
         
 ############# ppms
