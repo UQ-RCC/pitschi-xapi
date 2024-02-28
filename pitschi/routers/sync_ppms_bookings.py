@@ -133,7 +133,7 @@ def sync_ppms_bookings() -> None:
                         if not _project_in_db.collection:
                             _q_collection = get_rdm_collection(config.get('ppms', 'coreid'), _project_in_db.id)
                             # update it
-                            if _q_collection:
+                            if _q_collection and '-' in _q_collection:
                                 # create collection and collectioncache
                                 pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
                                 # create one its, one imb by default
