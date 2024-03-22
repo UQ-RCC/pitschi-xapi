@@ -26,7 +26,7 @@ def connect_smtp():
         connection.login(username, passwd)
     return connection
 
-def send_mail(to_address, subject, contents, subtype='html', to_sender=True, cc_sender=False):
+def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc_sender=True):
     """
     Send email
     """
