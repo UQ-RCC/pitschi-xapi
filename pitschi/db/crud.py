@@ -352,6 +352,13 @@ def update_ppms_user_email(db: Session, userlogin: str, email: str):
         db.commit()
         db.flush()
 
+def update_ppms_user_name(db: Session, userlogin: str, name: str):
+    _ppms_user = get_ppms_user(db, userlogin)
+    if _ppms_user:
+        _ppms_user.name = name
+        db.commit()
+        db.flush()
+
 def get_booking(db: Session, bookingid: int):
     return db.query(models.Booking).\
             filter(models.Booking.id == bookingid).first()
