@@ -24,7 +24,7 @@ def get_ppms_user(login):
 
 
 def get_ppms_user_by_id(uid:int, coreid:int):
-    logger.debug("@get_ppms_user_by_id: Querying user by id")
+    logger.debug(f'@get_ppms_user_by_id: Querying user by id: {uid}')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=GetUserDetailsById&checkUserId={uid}&coreid={coreid}"
     headers = {
@@ -103,6 +103,22 @@ def get_booking_details(coreid:int , sessionid: int):
             return response.json(strict=False)
     return []
 
+
+def get_daily_training(coreid:int, date: datetime.date):
+    logger.debug("@get_daily_training: Querying training of a certain date")
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    datestr = f"{date.strftime('%Y-%m-%d')}"
+    payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'training_query')}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code == 204:
+            return []
+        else:
+            return response.json(strict=False)
+    return []
 
 
 def get_systems():
@@ -207,10 +223,11 @@ def get_project_members(projectid: int):
             _csv_reader.__next__()
             members = []
             for row in _csv_reader:
-                if(len(row) > 8):
+                if (len(row) > 8):
                     _userid = int(row[1])
                     _userlogin = row[8]
-                    members.append({'id': _userid, 'login': _userlogin})
+                    if _userid > 0 and _userlogin:
+                        members.append({'id': _userid, 'login': _userlogin})
             return members
     else:
         return []

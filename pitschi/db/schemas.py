@@ -132,6 +132,7 @@ class System(BaseModel):
 class UserProjectBase(BaseModel):
     username: str
     projectid: int
+    enabled: bool = True
     
 class User(BaseModel):
     username: str

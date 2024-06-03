@@ -117,6 +117,7 @@ class UserProject(Base):
     __tablename__ = 'userproject'
     username = Column(String, ForeignKey('user.username'), primary_key=True)
     projectid = Column(Integer, ForeignKey('project.id'), primary_key=True)
+    enabled = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
     project = relationship("Project", back_populates="users")
     user = relationship("User", back_populates="projects")
     bookings = relationship("Booking", back_populates="userproject") 

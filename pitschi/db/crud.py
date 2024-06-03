@@ -321,7 +321,7 @@ def get_ppms_user(db: Session, username: str):
 
 def get_ppms_user_by_uid(db: Session, uid: int):
     return db.query(models.User).\
-            filter(models.User.userid == uid).first()
+            filter(models.User.userid == uid).all()
 
 def get_ppms_user_by_email(db: Session, email: str):
     return db.query(models.User).\
@@ -424,15 +424,18 @@ def cancel_booking(db: Session, bookingid: int):
 
 def create_booking(db: Session, session: schemas.Booking):
     booking = get_booking(db, session.id)
+    if session.username and session.projectid:
+        userproject = db.query(models.UserProject). \
+                        filter(models.UserProject.username == session.username). \
+                        filter(models.UserProject.projectid == session.projectid).first()
+        if not userproject:
+            userprojectobj = models.UserProject(username=session.username, projectid=session.projectid)
+            db.add(userprojectobj)
+            db.flush()
+        elif not userproject.enabled:
+            userproject.update({ models.UserProject.enabled: True }, synchronize_session='fetch')
+            db.flush()
     if not booking:
-        if session.username and session.projectid:
-            userproject = db.query(models.UserProject). \
-                            filter(models.UserProject.username == session.username). \
-                            filter(models.UserProject.projectid == session.projectid).first()
-            if not userproject:
-                userprojectobj = models.UserProject(username=session.username, projectid=session.projectid)
-                db.add(userprojectobj)
-                db.flush()
         booking = models.Booking(**session.dict())
         db.add(booking)
         db.flush()
@@ -450,24 +453,50 @@ def create_booking(db: Session, session: schemas.Booking):
         db.commit()
     return booking
 
-def create_user_project(db: Session, userproject: schemas.UserProjectBase):
-    _user_project = db.query(models.UserProject).\
-                        filter(models.UserProject.username == userproject.username).\
-                        filter(models.UserProject.projectid == userproject.projectid).\
-                        first()
-    if not _user_project:
-        userproject = models.UserProject(username=userproject.username, projectid=userproject.projectid)
-        db.add(userproject)
-        db.flush()
-        db.commit()
-
 def get_project(db: Session, projectid: int):
     return db.query(models.Project).\
             filter(models.Project.id == projectid).first()
 
 def get_project_users(db: Session, projectid: int):
     return db.query(models.UserProject).\
+            filter(models.UserProject.enabled).\
             filter(models.UserProject.projectid == projectid).all()
+
+def update_project_users(db: Session, projectid: int, members: list):
+    _all_members = db.query(models.UserProject).\
+            filter(models.UserProject.projectid == projectid).all()
+    # add new members
+    _new_members = [m for m in members if m not in [u.username for u in _all_members]]
+    if len(_new_members) > 0:
+        _usrs = ','.join(_new_members)
+        logger.debug(f'adding new members: project {projectid}: {_usrs}')
+        for _new_member in _new_members:
+            userproject = models.UserProject(username=_new_member, projectid=projectid)
+            db.add(userproject)
+        db.flush()
+        db.commit()
+    # enable members that are currently disabled
+    _disabled_members = db.query(models.UserProject).\
+            filter(~models.UserProject.enabled).\
+            filter(models.UserProject.projectid == projectid).\
+            filter(models.UserProject.username.in_(members))
+    if _disabled_members.count() > 0:
+        _usrs = ','.join([u.username for u in _disabled_members.all()])
+        logger.debug(f'enabling disabled members: project {projectid}: {_usrs}')
+        _disabled_members.update({ models.UserProject.enabled: True }, synchronize_session='fetch')
+        db.flush()
+        db.commit()
+    # disable non-members that are currently enabled
+    _non_members = db.query(models.UserProject).\
+            filter(models.UserProject.enabled).\
+            filter(models.UserProject.projectid == projectid).\
+            filter(~models.UserProject.username.in_(members))
+    if _non_members.count() > 0:
+        _usrs = ','.join([u.username for u in _non_members.all()])
+        logger.debug(f'disabling enabled non-members: project {projectid}: {_usrs}')
+        _non_members.update({ models.UserProject.enabled: False }, synchronize_session='fetch')
+        db.flush()
+        db.commit()
 
 def create_project(db: Session, aproject: schemas.Project):
     """
@@ -597,7 +626,7 @@ def get_projects_full(db: Session, userinfo: bool = True, collectioninfo: bool =
                 filter(models.Project.active == True).all()
     for _project in projects:
         if userinfo:
-            _users = db.query(models.User).join(models.UserProject).filter(models.UserProject.projectid == _project.id).all()
+            _users = db.query(models.User).join(models.UserProject).filter(models.UserProject.enabled).filter(models.UserProject.projectid == _project.id).all()
             _project.participants = _users
         if collectioninfo:
             _caches = db.query(models.CollectionCache).filter(models.CollectionCache.collection_name == _project.collection).all()

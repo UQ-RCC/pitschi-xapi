@@ -4,7 +4,8 @@ import datetime, pytz
 from fastapi import APIRouter, Depends, status
 from fastapi_utils.tasks import repeat_every
 import pitschi.db as pdb
-from pitschi.ppms import get_ppms_user, get_daily_bookings_one_system, get_daily_bookings, get_systems, get_projects, get_ppms_user_by_id, get_rdm_collection, get_project_members, get_booking_details
+from pitschi.ppms import get_daily_bookings_one_system, get_daily_bookings, get_daily_training, get_systems, get_projects, get_rdm_collection, get_project_members, get_booking_details
+from pitschi.routers.ppms_utils import get_db_user
 from sqlalchemy.orm import Session
 
 router = APIRouter()
@@ -30,10 +31,13 @@ def sync_ppms_bookings() -> None:
         logger.debug("query ppms bookings of today")
         _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()
         _bookings = get_daily_bookings(config.get('ppms', 'coreid'), _today_tz)
-        logger.debug(f"bookings: {_bookings}")
+        logger.debug(f"bookings: {len(_bookings)}")
+        _training_sessions = get_daily_training(config.get('ppms', 'coreid'), _today_tz)
+        logger.debug(f"training: {len(_training_sessions)}")
+        _rims_projects = None
+        _rims_systems = None
         ### handle cancelled bookings
         ### also if this is the same as in database, then ignore the rest
-        _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()
         _bookings_in_db = pdb.crud.get_bookings(db, _today_tz)
         _booking_ids_in_db = {_booking_in_db.id for _booking_in_db in _bookings_in_db}
         _booking_ids_now = {int(_booking.get("Ref (session)")) for _booking in _bookings if not _booking.get("Cancelled")} 
@@ -47,6 +51,7 @@ def sync_ppms_bookings() -> None:
         # it is still worth going over one more time, in case of updates in the bookings themselve
         _booking_objects = {}
         _systems_with_bookings = set()
+        _validated_db_users = {} # cache of validated user info
         for _booking in _bookings:
             # ignore old ones
             if not int(_booking.get("Ref (session)")) in _new_booking_ids:
@@ -58,29 +63,29 @@ def sync_ppms_bookings() -> None:
                                     starttime = datetime.time.fromisoformat(_booking.get("Start time")),\
                                     duration = int(_booking.get("Duration booked (minutes)")) ,\
                                     cancelled=bool(_booking.get("Cancelled")) )
-            _booking_objects[str(_booking.get("Ref (session)"))]  = _a_booking_object
             _system_name = _booking.get("System")
             _system = pdb.crud.get_system_byname(db, _system_name)
             if not _system:
                 # if no system exists --> maybe weekly task does not update yet
-                systems = get_systems()
-                if _system_name in systems:
-                    _system = pdb.crud.create_system(db, pdb.schemas.System( \
-                                                    id=systems.get(_system_name).get('systemid'), \
-                                                    name=systems.get(_system_name).get('systemname'), \
-                                                    type=systems.get(_system_name).get('systemtype') \
-                                                ))
-            logger.debug(f"systemid:{_system.id}")
-            _a_booking_object.systemid = _system.id
-            _systems_with_bookings.add(_system.id)
-        logger.debug(f"\nbooking objects: {_booking_objects}\n")
+                if not _rims_systems:
+                    _rims_systems = get_systems()
+                _sys = _rims_systems.get(_system_name)
+                if _sys:
+                    _system = pdb.crud.create_system(db, pdb.schemas.System(
+                        id=_sys.get('systemid'), name=_sys.get('systemname'), type=_sys.get('systemtype')))
+            if _system:
+                logger.debug(f"systemid: {_system.id}")
+                _a_booking_object.systemid = _system.id
+                _systems_with_bookings.add(_system.id)
+            _booking_objects[str(_booking.get("Ref (session)"))] = _a_booking_object
         for _sys_id in _systems_with_bookings:
-            _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()
             _system_bookings = get_daily_bookings_one_system(config.get('ppms', 'coreid'), _sys_id, _today_tz)
-            logger.debug(f"daily booking of system:{_system_bookings}" )
+            logger.debug(f"daily booking of system: {len(_system_bookings)}" )
             for _system_booking in _system_bookings:
+                _is_training_session = False
+                _booking_details = None
                 _system_booking_id = str(_system_booking.get('id'))
-                logger.debug(f"system booking id:{_system_booking_id}" )
+                logger.debug(f"system booking id: {_system_booking_id}" )
                 if _system_booking_id in _booking_objects:
                     # if this booking does not belong to any project, ignore
                     # if projectId == 0 --> highly likely a training
@@ -93,29 +98,37 @@ def sync_ppms_bookings() -> None:
                     if _system_booking.get('projectId') == '0' or not _system_booking.get('projectId'):
                         logger.info(f">>>booking {_system_booking} is a training")
                         if ( _system_booking.get('userName') == 'Training' or _system_booking.get('User') == 'Training') and _system_booking.get('assistant') != '':
-                            _a_booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
-                            logger.info(f"training details {_a_booking_details}")
-                            if len(_a_booking_details) > 0:
-                                _assistance_id = int(_a_booking_details[0].get("assistantId"))
+                            logger.debug(f'Get project info for training booking id {_system_booking_id}')
+                            _booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
+                            logger.info(f"training details {_booking_details}")
+                            if len(_booking_details) > 0:
+                                _assistance_id = int(_booking_details[0].get("assistantId"))
                                 # now translate this id to user
-                                _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
-                                if _assistant_in_db:
-                                    _booking_objects[_system_booking_id].username = _assistant_in_db.username
-                                    _booking_objects[_system_booking_id].assistant = _assistant_in_db.username
+                                if _validated_db_users.get(_assistance_id, 0) == 0:
+                                    _validated_db_users[_assistance_id] = get_db_user(db, userid=_assistance_id)
                                 else:
-                                    ### look in ppms
-                                    logger.debug(f">>>>>>>>>>>>>Need to find user with id: {_assistance_id}")                
-                    else:
+                                    logger.debug(f'Already checked booking user: {_assistance_id}')
+                                _assistant_in_db = _validated_db_users[_assistance_id]
+                                if _assistant_in_db:
+                                    _booking_objects[_system_booking_id].assistant = _assistant_in_db.username
+                            for _training_session in _training_sessions:
+                                if _system_booking['id'] == _training_session['SessionID']:
+                                    _system_booking['userId'] = _training_session['UserID']
+                                    _system_booking['projectId'] = _training_session['ProjectID']
+                                    _system_booking['projectName'] = _training_session['Project Name']
+                                    _is_training_session = True
+                                    break
+                    if _system_booking.get('projectId'):
                         _booking_objects[_system_booking_id].projectid = int(_system_booking.get('projectId'))
                         ######### handle projectId ##############
                         _project_in_db = pdb.crud.get_project(db, _system_booking.get('projectId'))
-                        logger.debug(f"project id:{_system_booking.get('projectId')}")
-                        logger.debug(f"project in db:{_project_in_db}")
+                        logger.debug(f"project id: {_system_booking.get('projectId')}")
                         # if project does not exists
                         if not _project_in_db:
                             logger.debug(f"Not exists, create new project")
-                            projects = get_projects()
-                            for project in projects:
+                            if not _rims_projects:
+                                _rims_projects = get_projects()
+                            for project in _rims_projects:
                                 # logger.debug(f"project ref=:{project.get('ProjectRef')} projectid={_system_booking.get('projectId')}")
                                 if project.get('ProjectRef') == _system_booking.get('projectId'):
                                     _projectSchema = pdb.schemas.Project(\
@@ -127,7 +140,7 @@ def sync_ppms_bookings() -> None:
                                                     description = project.get('Descr'))
                                     _project_in_db = pdb.crud.create_project(db, _projectSchema)
                         if not _project_in_db:
-                            logger.debug(f"project id:{_system_booking.get('projectId')} still not in database. ignore this booking")
+                            logger.debug(f"project id: {_system_booking.get('projectId')} still not in database. ignore this booking")
                             continue
                         # first collection
                         if not _project_in_db.collection:
@@ -143,82 +156,52 @@ def sync_ppms_bookings() -> None:
                         # now with project users
                         # _project_users = get_project_user(_project_in_db.id)
                         _project_members = get_project_members(_project_in_db.id)
-                        logger.debug(f"project {_project_in_db.id} users:{_project_members}")
+                        logger.debug(f"project {_project_in_db.id} users: {_project_members}")
+                        _validated_project_users = []
                         for _project_member in _project_members:
-                            _project_user = _project_member.get("login").strip()
-                            logger.debug(f"Checking project user:{_project_user}")
-                            if not _project_user:
-                                logger.debug(f"{_project_user} is empty. ignore")
+                            if _validated_db_users.get(_project_member.get('id'), 0) == 0:
+                                _validated_db_users[_project_member.get('id')] = get_db_user(db, userid=_project_member.get('id'))
+                            _user_info = _validated_db_users[_project_member.get('id')]
+                            if not _user_info:
+                                logger.debug(f'invalid user - id: {_project_member.get("id")}, login: {_project_member.get("login")}')
                                 continue
-                            _db_user = pdb.crud.get_ppms_user(db, _project_user)
-                            if not _db_user:
-                                _user_info = get_ppms_user(_project_user)
-                                _user_schema = pdb.schemas.User(\
-                                                username = _user_info.get('login'),\
-                                                userid = _project_member.get("id"),\
-                                                name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
-                                                email = _user_info.get('email') \
-                                            )
-                                logger.debug(f"User {_user_info.get('login')} does not exist, create new one")
-                                _db_user = pdb.crud.create_ppms_user(db, _user_schema)
-                                logger.debug(f"Create user project...")
-                                pdb.crud.create_user_project(  db, pdb.schemas.UserProjectBase(\
-                                                                username = _user_info.get('login'),\
-                                                                projectid = _project_in_db.id ) )
-                            if not _db_user.userid:
-                                pdb.crud.update_ppms_user_id(db, _db_user.username, _project_member.get("id"))
-                            if _db_user.email == _system_booking.get('userEmail'):
+                            # add project to user projects if not already added
+                            _validated_project_users.append(_user_info.username)
+                            if _user_info.userid == _system_booking.get('userId'):
+                                _booking_objects[_system_booking_id].username = _user_info.username
                                 logger.debug(f">>>>{_booking_objects[_system_booking_id]}")
                                 logger.debug(f">>>>assistance: {_booking_objects[_system_booking_id].assistant}")
-                                if not _booking_objects[_system_booking_id].assistant:
-                                    logger.debug(f"This booking has no assistant, username: {_db_user.username}")
-                                    _booking_objects[_system_booking_id].username = _db_user.username
-                                else:
-                                    logger.debug("This booking has assistant")
-                                    ### this session requires assistance
-                                    # check if this user can operate the machine 
-                                    # _system_rights = get_system_rights(_sys_id)
-                                    # _user_system_right = _system_rights.get(_db_user.username)
-                                    #TODO: if _user_system_right is A, create 2 booking objects, one for user, one for assistant person
-                                    # if _user_system_right in ("A", "S"):
-                                        # _booking_objects[_system_booking_id].username = _db_user.username
-                                    _booking_objects[_system_booking_id].username = _db_user.username
-                                    #### get the assistance login
-                                    logger.debug("Querying booking details@ppms_booking syncing")
-                                    _booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
-                                    logger.debug(f"Booking details>>>: {_booking_details}")
-                                    if len(_booking_details) > 0:
-                                        _a_booking_details = _booking_details[0]
-                                        logger.debug(f"Booking: {_a_booking_details}")
-                                        _assistance_id = int(_a_booking_details.get("assistantId"))
-                                        logger.debug(f"assistant: {_assistance_id}")
-                                        # now translate this id to user
-                                        _assistant_in_db = pdb.crud.get_ppms_user_by_uid(db, _assistance_id)
-                                        if _assistant_in_db:
-                                            _booking_objects[_system_booking_id].assistant = _assistant_in_db.username
-                                            logger.debug(f"Setting assistant: {_assistant_in_db.username}")
+                                if not _is_training_session:
+                                    if _booking_objects[_system_booking_id].assistant:
+                                        logger.debug("This booking has assistant")
+                                        logger.debug("Querying booking details@ppms_booking syncing")
+                                        if not _booking_details:
+                                            _booking_details = get_booking_details(config.get('ppms', 'coreid'), _system_booking_id)
+                                        logger.debug(f"Booking details>>>: {_booking_details}")
+                                        if len(_booking_details) > 0:
+                                            _assistance_id = int(_booking_details[0].get("assistantId"))
+                                            # now translate this id to user
+                                            if _validated_db_users.get(_assistance_id, 0) == 0:
+                                                _validated_db_users[_assistance_id] = get_db_user(db, userid=_assistance_id)
+                                            _assistant_in_db = _validated_db_users[_assistance_id]
+                                            if _assistant_in_db:
+                                                logger.debug(f"Setting assistant: {_assistant_in_db.username}")
+                                                _booking_objects[_system_booking_id].assistant = _assistant_in_db.username
+                                            else:
+                                                continue
                                         else:
-                                            ### look in ppms
-                                            logger.debug(f">>>>>>>>>>>>>Need to find user with id: {_assistance_id}")
-                                            _users = get_ppms_user_by_id(_assistance_id, config.get('ppms', 'coreid'))
-                                            if len(_users) > 0:
-                                                _user_info = _users[0]
-                                                _user_schema = pdb.schemas.User(\
-                                                    username = _user_info.get('login'),\
-                                                    userid = _assistance_id,\
-                                                    name = f"{_user_info.get('lname')} {_user_info.get('fname')}",\
-                                                    email = _user_info.get('email') \
-                                                )
-                                                logger.debug(f"User {_user_info.get('login')} does not exist, create new one")
-                                                _db_user = pdb.crud.create_ppms_user(db, _user_schema)
-                                                _booking_objects[_system_booking_id].assistant = _user_info.get('login')
+                                            logger.error(f"Booking details of booking {_system_booking_id} returns nothing")
                                     else:
-                                        logger.error(f"Booking details of booking {_system_booking_id} returns nothing. Username of this booking is null")
+                                        logger.debug(f"This booking has no assistant, username: {_user_info.username}")
+                        pdb.crud.update_project_users(db, _project_in_db.id, _validated_project_users)
                         # end for loop
                         # get user details
                         if _system_booking.get('userId'):
-                            logger.debug(f"checking userId:{_system_booking.get('userId')}")
-                            _user_in_db = pdb.crud.get_ppms_user_by_uid(db, int(_system_booking.get('userId')))
+                            _user_id = int(_system_booking.get('userId'))
+                            logger.debug(f"checking userId: {_user_id}")
+                            if _validated_db_users.get(_user_id, 0) == 0:
+                                _validated_db_users[_user_id] = get_db_user(db, userid=_user_id)
+                            _user_in_db = _validated_db_users[_user_id]
                             if _user_in_db:
                                 _booking_objects[_system_booking_id].username = _user_in_db.username
                             else:
@@ -228,6 +211,7 @@ def sync_ppms_bookings() -> None:
                                         
 
 
+        logger.debug(f"booking objects: {len(_booking_objects)}\n")
         # create bookings
         # [ pdb.crud.create_booking(db, _booking_object) for _booking_object in _booking_objects.values() ]
         for _booking_object in _booking_objects.values():
