@@ -424,17 +424,6 @@ def cancel_booking(db: Session, bookingid: int):
 
 def create_booking(db: Session, session: schemas.Booking):
     booking = get_booking(db, session.id)
-    if session.username and session.projectid:
-        userproject = db.query(models.UserProject). \
-                        filter(models.UserProject.username == session.username). \
-                        filter(models.UserProject.projectid == session.projectid).first()
-        if not userproject:
-            userprojectobj = models.UserProject(username=session.username, projectid=session.projectid)
-            db.add(userprojectobj)
-            db.flush()
-        elif not userproject.enabled:
-            userproject.update({ models.UserProject.enabled: True }, synchronize_session='fetch')
-            db.flush()
     if not booking:
         booking = models.Booking(**session.dict())
         db.add(booking)
@@ -469,10 +458,10 @@ def update_project_users(db: Session, projectid: int, members: list):
     _new_members = [m for m in members if m not in [u.username for u in _all_members]]
     if len(_new_members) > 0:
         _usrs = ','.join(_new_members)
-        logger.debug(f'adding new members: project {projectid}: {_usrs}')
+        logger.debug(f'add new project {projectid} members: {_usrs}')
         for _new_member in _new_members:
-            userproject = models.UserProject(username=_new_member, projectid=projectid)
-            db.add(userproject)
+            userprojectobj = models.UserProject(username=_new_member, projectid=projectid)
+            db.add(userprojectobj)
         db.flush()
         db.commit()
     # enable members that are currently disabled
@@ -482,7 +471,7 @@ def update_project_users(db: Session, projectid: int, members: list):
             filter(models.UserProject.username.in_(members))
     if _disabled_members.count() > 0:
         _usrs = ','.join([u.username for u in _disabled_members.all()])
-        logger.debug(f'enabling disabled members: project {projectid}: {_usrs}')
+        logger.debug(f'enable disabled project {projectid} members: {_usrs}')
         _disabled_members.update({ models.UserProject.enabled: True }, synchronize_session='fetch')
         db.flush()
         db.commit()
@@ -493,7 +482,7 @@ def update_project_users(db: Session, projectid: int, members: list):
             filter(~models.UserProject.username.in_(members))
     if _non_members.count() > 0:
         _usrs = ','.join([u.username for u in _non_members.all()])
-        logger.debug(f'disabling enabled non-members: project {projectid}: {_usrs}')
+        logger.debug(f'disable enabled project {projectid} non-members: {_usrs}')
         _non_members.update({ models.UserProject.enabled: False }, synchronize_session='fetch')
         db.flush()
         db.commit()

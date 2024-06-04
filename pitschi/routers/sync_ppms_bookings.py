@@ -74,10 +74,10 @@ def sync_ppms_bookings() -> None:
                     _system = pdb.crud.create_system(db, pdb.schemas.System(
                         id=_sys.get('systemid'), name=_sys.get('systemname'), type=_sys.get('systemtype')))
             if _system:
-                logger.debug(f"systemid: {_system.id}")
                 _a_booking_object.systemid = _system.id
                 _systems_with_bookings.add(_system.id)
             _booking_objects[str(_booking.get("Ref (session)"))] = _a_booking_object
+        logger.debug(f'systems with bookings: {_systems_with_bookings}')
         for _sys_id in _systems_with_bookings:
             _system_bookings = get_daily_bookings_one_system(config.get('ppms', 'coreid'), _sys_id, _today_tz)
             logger.debug(f"daily booking of system: {len(_system_bookings)}" )

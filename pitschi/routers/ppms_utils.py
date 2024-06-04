@@ -11,6 +11,7 @@ logger = logging.getLogger('pitschixapi')
 
 def de_dup_userid(db: Session, login: str, userid: int, users_info: dict):
     # user name was changed in rims, try to find and fix users with wrong id
+    logger.debug(f'checking for duplicate userids: {userid}')
     for _fix_user in pdb.crud.get_ppms_user_by_uid(db, userid):
         # look for user with same id and different login
         if _fix_user.username != login:
@@ -20,18 +21,23 @@ def de_dup_userid(db: Session, login: str, userid: int, users_info: dict):
                 if users_info.get(_fix_user.username):
                     _usr = { 'login': _fix_user.username, **users_info[_fix_user.username] }
             else:
-                _usr_info = get_ppms_user(_fix_user.username)
-                if _usr_info:
-                    _usr = _usr_info
+                try:
+                    _usr_info = get_ppms_user(_fix_user.username)
+                    if _usr_info:
+                        _usr = _usr_info
+                except:
+                    pass
             if _usr and _fix_user.userid != _usr.get('id'):
                 msg = f'fixing user {_fix_user.username} id - updating {_fix_user.userid} to {_usr.get("id")}'
                 logger.warning('  ' + msg)
                 pdb.crud.update_ppms_user_id(db, _fix_user.username, _usr.get('id'))
-#                send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
+                if config.get('miscs', 'xapi_alerts_enabled', default='yes') == 'yes':
+                    send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
             else:
                 msg = f'User {_fix_user.username} has duplicate id {userid}'
                 logger.error(msg)
-#                send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
+                if config.get('miscs', 'xapi_alerts_enabled', default='yes') == 'yes':
+                    send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
 
 
 def get_db_user(db: Session, login: str = None, userid: int = None, users_info: dict = None):
