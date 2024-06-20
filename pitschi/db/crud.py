@@ -397,7 +397,11 @@ def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate:
                 filter(models.Booking.systemid == systemid). \
                 filter(or_(models.Booking.username == username, models.Booking.assistant == username)). \
                 filter(models.Booking.bookingdate == bookingdate). \
-                filter(models.Booking.cancelled == False).all()
+                filter(models.Booking.cancelled == False).\
+                join(models.UserProject).\
+                filter(models.UserProject.username == models.Booking.username).\
+                filter(models.UserProject.projectid == models.Booking.projectid).\
+                filter(models.UserProject.enabled).all()
     for booking in bookings:
         if booking.projectid:
             booking.project = get_project(db, booking.projectid)
@@ -423,6 +427,15 @@ def cancel_booking(db: Session, bookingid: int):
         db.commit()
 
 def create_booking(db: Session, session: schemas.Booking):
+    if session.username and session.projectid:
+        userproject = db.query(models.UserProject). \
+                        filter(models.UserProject.username == session.username). \
+                        filter(models.UserProject.projectid == session.projectid).first()
+        if not userproject:
+            # need to add a disabled project member for booking foreign key constraint with userproject
+            userprojectobj = models.UserProject(username=session.username, projectid=session.projectid, enabled=False)
+            db.add(userprojectobj)
+            db.flush()
     booking = get_booking(db, session.id)
     if not booking:
         booking = models.Booking(**session.dict())

@@ -193,6 +193,8 @@ def sync_ppms_bookings() -> None:
                                             logger.error(f"Booking details of booking {_system_booking_id} returns nothing")
                                     else:
                                         logger.debug(f"This booking has no assistant, username: {_user_info.username}")
+                        logger.debug(f'_project_in_db.id: {_project_in_db.id}')
+                        logger.debug(f'_validated_project_users: {_validated_project_users}')
                         pdb.crud.update_project_users(db, _project_in_db.id, _validated_project_users)
                         # end for loop
                         # get user details
