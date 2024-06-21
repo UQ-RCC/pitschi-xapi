@@ -31,13 +31,11 @@ def de_dup_userid(db: Session, login: str, userid: int, users_info: dict):
                 msg = f'fixing user {_fix_user.username} id - updating {_fix_user.userid} to {_usr.get("id")}'
                 logger.warning('  ' + msg)
                 pdb.crud.update_ppms_user_id(db, _fix_user.username, _usr.get('id'))
-                if config.get('miscs', 'xapi_alerts_enabled', default='yes') == 'yes':
-                    send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
+                send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
             else:
                 msg = f'User {_fix_user.username} has duplicate id {userid}'
                 logger.error(msg)
-                if config.get('miscs', 'xapi_alerts_enabled', default='yes') == 'yes':
-                    send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
+                send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
 
 
 def get_db_user(db: Session, login: str = None, userid: int = None, users_info: dict = None):

@@ -18,6 +18,8 @@ def send_teams_notification(type, title, message):
     """
     send a notification to teams
     """
+    if config.get('miscs', 'xapi_alerts_enabled', default='yes') == 'no':
+        return
     url = f"{config.get('miscs', 'teams_webhook')}"
     if type == "Error":
         themeColor = "c60000"
