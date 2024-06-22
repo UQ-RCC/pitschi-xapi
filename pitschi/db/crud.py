@@ -1,6 +1,7 @@
 import base64
 from sqlalchemy.orm import aliased, Session
 from sqlalchemy import inspect, and_, or_, func
+from pydantic import parse_obj_as
 from urllib.parse import quote
 from . import models, schemas
 from typing import List
@@ -426,7 +427,8 @@ def cancel_booking(db: Session, bookingid: int):
         db.flush()
         db.commit()
 
-def create_booking(db: Session, session: schemas.Booking):
+def create_booking(db: Session, booking_session: schemas.Booking):
+    session = parse_obj_as(schemas.Booking, booking_session)
     if session.username and session.projectid:
         userproject = db.query(models.UserProject). \
                         filter(models.UserProject.username == session.username). \
@@ -437,21 +439,24 @@ def create_booking(db: Session, session: schemas.Booking):
             db.add(userprojectobj)
             db.flush()
     booking = get_booking(db, session.id)
-    if not booking:
+    if booking:
+        # update -> important
+        booking_update = session.dict(exclude_unset=True)
+        for col in [c.name for c in booking.__table__.columns]:
+            if col in booking_update:
+                if getattr(booking, col) == booking_update[col]:
+                    booking_update.pop(col)
+        if booking_update:
+            logger.debug(f'updating booking: {booking_update}')
+            db.query(models.Booking).filter(models.Booking.id == session.id).update(booking_update)
+            db.flush()
+            db.refresh(booking)
+            db.commit()
+    else:
         booking = models.Booking(**session.dict())
         db.add(booking)
         db.flush()
         db.refresh(booking)
-        db.commit()
-    else:
-        # update -> important
-        existing_booking_dic = row2dict(booking, True)
-        stored_booking_model = schemas.Booking(**existing_booking_dic)
-        update_booking_data = session.dict(exclude_unset=True)
-        updated_booking_item = stored_booking_model.copy(update=update_booking_data)
-        updated_booking_item_dict = updated_booking_item.dict()
-        db.query(models.Booking).filter(models.Booking.id == session.id).update(updated_booking_item_dict)
-        db.flush()
         db.commit()
     return booking
 
