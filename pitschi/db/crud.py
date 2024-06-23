@@ -194,8 +194,8 @@ def create_file(db: Session, file: schemas.FileCreate):
     afile.dataset_id = file.dataset_id
     db.add(afile)
     db.flush()
-    db.refresh(afile)
     db.commit()
+    db.refresh(afile)
 
 def update_dataset_space_datasetid(db: Session, datasetid: int, spaceid: str, clowderdatasetid: str):
     updateObj = {}
@@ -305,14 +305,27 @@ def get_system_byname(db: Session, systemname: str):
 
 def create_system(db: Session, system: schemas.System):
     """
-    Create a PPMS system. no need to update
+    Create a PPMS system, or update if needed
     """
     _a_system = get_system(db, system.id)
-    if not _a_system:
+    if _a_system:
+        system_update = system.dict(exclude_unset=True)
+        for col in [c.name for c in _a_system.__table__.columns]:
+            if col in system_update:
+                if getattr(_a_system, col) == system_update[col]:
+                    system_update.pop(col)
+        if system_update:
+            logger.debug(f'updating system: {system_update}')
+            db.query(models.System).filter(models.System.id == system.id).update(system_update)
+            db.flush()
+            db.commit()
+            db.refresh(_a_system)
+    else:
+        logger.debug(f'creating system: {system.id}')
         _a_system = models.System(**system.dict())
         db.add(_a_system)
-        db.commit()
         db.flush()
+        db.commit()
         db.refresh(_a_system)
     return _a_system
 
@@ -328,37 +341,53 @@ def get_ppms_user_by_email(db: Session, email: str):
     return db.query(models.User).\
             filter(models.User.email == email).first()
 
-def create_ppms_user(db: Session, auser: schemas.User):
-    user = get_ppms_user(db, auser.username)
-    if not user:
-        user = models.User(**auser.dict())
-        db.add(user)
-        db.commit()
+def create_ppms_user(db: Session, user: schemas.User):
+    '''
+    create user, or update if needed
+    '''
+    _a_user = get_ppms_user(db, user.username)
+    if _a_user:
+        user_update = user.dict(exclude_unset=True)
+        for col in [c.name for c in _a_user.__table__.columns]:
+            if col in user_update:
+                if getattr(_a_user, col) == user_update[col]:
+                    user_update.pop(col)
+        if user_update:
+            logger.debug(f'updating user: {user_update}')
+            db.query(models.User).filter(models.User.username == user.username).update(user_update)
+            db.flush()
+            db.commit()
+            db.refresh(_a_user)
+    else:
+        logger.debug(f'creating user: {user.username}')
+        _a_user = models.User(**user.dict())
+        db.add(_a_user)
         db.flush()
-        db.refresh(user)
-    return user
+        db.commit()
+        db.refresh(_a_user)
+    return _a_user
     
 def update_ppms_user_id(db: Session, userlogin: str, uid: int):
     _ppms_user = get_ppms_user(db, userlogin)
     if _ppms_user:
         _ppms_user.userid = uid
-        db.commit()
         db.flush()
+        db.commit()
         
 
 def update_ppms_user_email(db: Session, userlogin: str, email: str):
     _ppms_user = get_ppms_user(db, userlogin)
     if _ppms_user:
         _ppms_user.email = email
-        db.commit()
         db.flush()
+        db.commit()
 
 def update_ppms_user_name(db: Session, userlogin: str, name: str):
     _ppms_user = get_ppms_user(db, userlogin)
     if _ppms_user:
         _ppms_user.name = name
-        db.commit()
         db.flush()
+        db.commit()
 
 def get_booking(db: Session, bookingid: int):
     return db.query(models.Booking).\
@@ -428,6 +457,9 @@ def cancel_booking(db: Session, bookingid: int):
         db.commit()
 
 def create_booking(db: Session, booking_session: schemas.Booking):
+    '''
+    create booking, or update if needed
+    '''
     session = parse_obj_as(schemas.Booking, booking_session)
     if session.username and session.projectid:
         userproject = db.query(models.UserProject). \
@@ -450,14 +482,15 @@ def create_booking(db: Session, booking_session: schemas.Booking):
             logger.debug(f'updating booking: {booking_update}')
             db.query(models.Booking).filter(models.Booking.id == session.id).update(booking_update)
             db.flush()
-            db.refresh(booking)
             db.commit()
+            db.refresh(booking)
     else:
+        logger.debug(f'creating booking: {session.id}')
         booking = models.Booking(**session.dict())
         db.add(booking)
         db.flush()
-        db.refresh(booking)
         db.commit()
+        db.refresh(booking)
     return booking
 
 def get_project(db: Session, projectid: int):
@@ -505,34 +538,45 @@ def update_project_users(db: Session, projectid: int, members: list):
         db.flush()
         db.commit()
 
-def create_project(db: Session, aproject: schemas.Project):
+def create_project(db: Session, project: schemas.Project):
     """
-    Create a new project.
-    If exists, update
-    If not, create new one
+    Create a new project, or update if needed
     """
-    project = get_project(db, aproject.id)
-    if not project:
-        project = models.Project(**aproject.dict())
-        db.add(project)
-        db.commit()
+    _a_project = get_project(db, project.id)
+    if _a_project:
+        project_update = project.dict(exclude_unset=True)
+        for col in [c.name for c in _a_project.__table__.columns]:
+            if col in project_update:
+                if getattr(_a_project, col) == project_update[col]:
+                    project_update.pop(col)
+        if project_update:
+            logger.debug(f'updating project: {project_update}')
+            db.query(models.Project).filter(models.Project.id == project.id).update(project_update)
+            db.flush()
+            db.commit()
+            db.refresh(_a_project)
+    else:
+        logger.debug(f'creating project: {project.id}')
+        _a_project = models.Project(**project.dict())
+        db.add(_a_project)
         db.flush()
-        db.refresh(project)
-    return project
+        db.commit()
+        db.refresh(_a_project)
+    return _a_project
 
 def update_project_collection(db: Session, id: int, q_collection: str):
     project = get_project(db, id)
     if project:
         project.collection = q_collection
-        db.commit()
         db.flush()
+        db.commit()
 
 def update_project_name(db: Session, id: int, name: str):
     project = get_project(db, id)
     if project:
         project.name = name
-        db.commit()
         db.flush()
+        db.commit()
 
 def get_imported_success_datasets(db: Session):
     return db.query(models.Dataset).\
@@ -580,8 +624,8 @@ def create_collection(db: Session, acollection: schemas.CollectionBase):
         logger.info(f">>>>>>>create collection: null <>>> create new one")
         collection = models.Collection(**acollection.dict())
         db.add(collection)
-        db.commit()
         db.flush()
+        db.commit()
         db.refresh(collection)
     return collection
 
@@ -602,8 +646,8 @@ def create_collection_cache(db: Session, acollectioncache: schemas.CollectionCac
     if not collectioncache:
         collectioncache = models.CollectionCache(**acollectioncache.dict())
         db.add(collectioncache)
-        db.commit()
         db.flush()
+        db.commit()
         db.refresh(collectioncache)
     return collectioncache
 
@@ -672,8 +716,8 @@ def update_collection(db: Session, collectionid: str, collectioncacheinfo: schem
         # create a new one
         collectioncache = models.CollectionCache(**collectioncacheinfo.dict())
         db.add(collectioncache)
-        db.commit()
         db.flush()
+        db.commit()
         db.refresh(collectioncache)
     else:
         existing_cc_dic = row2dict(_collection_cache_in_db, True)
@@ -703,8 +747,8 @@ def add_daily_task(db: Session, task: schemas.DailyTaskBase):
     """
     dailytask = models.DailyTask(**task.dict())
     db.add(dailytask)
-    db.commit()
     db.flush()
+    db.commit()
     db.refresh(dailytask)
     return dailytask
 
