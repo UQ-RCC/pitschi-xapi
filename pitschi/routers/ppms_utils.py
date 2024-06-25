@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger('pitschixapi')
 
 
-def de_dup_userid(db: Session, login: str, userid: int, users_info: dict):
+def de_dup_userid(db: Session, login: str, userid: int, users_info: dict, alert: bool = False):
     # user name was changed in rims, try to find and fix users with wrong id
     for _fix_user in pdb.crud.get_ppms_user_by_uid(db, userid):
         # look for user with same id and different login
@@ -28,16 +28,18 @@ def de_dup_userid(db: Session, login: str, userid: int, users_info: dict):
                     pass
             if _usr and _fix_user.userid != _usr.get('id'):
                 msg = f'fixing user {_fix_user.username} id - updating {_fix_user.userid} to {_usr.get("id")}'
-                logger.warning('  ' + msg)
+                logger.warning(msg)
                 pdb.crud.update_ppms_user_id(db, _fix_user.username, _usr.get('id'))
-                send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
+                if (alert):
+                    send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
             else:
                 msg = f'User {_fix_user.username} has duplicate id {userid}'
                 logger.error(msg)
-                send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
+                if (alert):
+                    send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
 
 
-def get_db_user(db: Session, login: str = None, userid: int = None, users_info: dict = None):
+def get_db_user(db: Session, login: str = None, userid: int = None, users_info: dict = None, alert: bool = False):
     '''
     get user info by login or userid from db
     use users_info to add missing user to db, or update db user if needed
@@ -60,7 +62,7 @@ def get_db_user(db: Session, login: str = None, userid: int = None, users_info: 
         return None
     _user_schema = pdb.schemas.User(username=_usr.get('login'), userid=_usr.get('id'), name=_usr.get('name'), email=_usr.get('email'))
     _db_user = pdb.crud.create_ppms_user(db, _user_schema)
-    de_dup_userid(db, _db_user.username, _usr.get('id'), users_info)
+    de_dup_userid(db, _db_user.username, _usr.get('id'), users_info, alert=alert)
     return _db_user
 
 
@@ -127,7 +129,7 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
                 if not _project_user:
                     logger.debug(f"{_project_user} is empty. ignore")
                     continue
-                _db_user = get_db_user(db, login=_project_user, users_info=_users_info)
+                _db_user = get_db_user(db, login=_project_user, users_info=_users_info, alert=True)
                 _validated_db_users.append(_project_user)
             else:
                 logger.debug(f"Already checked project user: {_project_user}")
