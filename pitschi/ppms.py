@@ -24,7 +24,7 @@ def get_ppms_user(login):
 
 
 def get_ppms_user_by_id(uid:int, coreid:int):
-    logger.debug(f'@get_ppms_user_by_id: Querying user by id: {uid}')
+    logger.debug(f'@get_ppms_user_by_id: get user by id: {uid}')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=GetUserDetailsById&checkUserId={uid}&coreid={coreid}"
     headers = {
@@ -40,7 +40,7 @@ def get_ppms_user_by_id(uid:int, coreid:int):
 
 
 def get_ppms_users(coreid:int):
-    logger.debug("@get_ppms_users: Querying all ppms users")
+    logger.debug("@get_ppms_users: get all ppms users")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report1335&coreid={coreid}"
     headers = {
@@ -56,7 +56,7 @@ def get_ppms_users(coreid:int):
 
 
 def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.date):
-    logger.debug("@get_daily_bookings_one_system: Querying booking of a certain date")
+    logger.debug("@get_daily_bookings_one_system: get bookings for given date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
     payload=f"apikey={config.get('ppms', 'api2_key')}&action=GetSessionsList&filter=day&systemid={systemid}&date={datestr}&coreid={coreid}"
@@ -72,7 +72,7 @@ def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.dat
     return []
 
 def get_daily_bookings(coreid:int , date: datetime.date):
-    logger.debug("@get_daily_bookings: Querying booking of a certain date")
+    logger.debug("@get_daily_bookings: get bookings for given date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
     payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'booking_query')}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
@@ -89,7 +89,7 @@ def get_daily_bookings(coreid:int , date: datetime.date):
 
 
 def get_booking_details(coreid:int , sessionid: int):
-    logger.debug("Querying booking details")
+    logger.debug(f'get booking id {sessionid} details')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     payload=f"apikey={config.get('ppms', 'api2_key')}&action=GetSessionDetails&sessionid={sessionid}&coreid={coreid}"
     headers = {
@@ -105,7 +105,7 @@ def get_booking_details(coreid:int , sessionid: int):
 
 
 def get_daily_training(coreid:int, date: datetime.date):
-    logger.debug("@get_daily_training: Querying training of a certain date")
+    logger.debug("@get_daily_training: get training for given date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
     payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'training_query')}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
@@ -122,7 +122,7 @@ def get_daily_training(coreid:int, date: datetime.date):
 
 
 def get_systems():
-    logger.debug("Querying systems")
+    logger.debug("get all systems")
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getsystems"
     headers = {
@@ -140,16 +140,17 @@ def get_systems():
             systems = {}
             for row in _csv_reader:
                 if(len(row) > 3):
+                    _coreid = int(row[0])
                     _systemid = int(row[1])
                     _systemtype = row[2]
                     _systemname = row[3]
-                    systems[_systemname] = {'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname}
+                    systems[_systemname] = {'coreid': _coreid, 'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname}
             return systems
     return {}
 
 
 def get_system_rights(systemid: int):
-    logger.debug("Querying systems")
+    logger.debug("get systems")
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getsysrights&id={systemid}"
     headers = {
@@ -169,7 +170,7 @@ def get_system_rights(systemid: int):
 
 
 def get_projects():
-    logger.debug("Querying projects")
+    logger.debug("get all projects")
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&active=true&format=json"
     # payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&format=json"
@@ -187,7 +188,7 @@ def get_projects():
 
 
 def get_project_user(projectid: int):
-    logger.debug("Querying project user")
+    logger.debug(f'get project id {projectid} users')
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojectusers&withdeactivated=false&projectid={projectid}"
     headers = {
@@ -207,7 +208,7 @@ def get_project_members(projectid: int):
     """
     Similar to project_user but with user id as well
     """
-    logger.debug("Querying project user")
+    logger.debug(f'get project id {projectid} members')
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojectmember&projectid={projectid}"
     headers = {

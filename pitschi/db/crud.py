@@ -315,13 +315,13 @@ def create_system(db: Session, system: schemas.System):
                 if getattr(_a_system, col) == system_update[col]:
                     system_update.pop(col)
         if system_update:
-            logger.debug(f'updating system: {system_update}')
+            logger.debug(f'updating system {system.id}: {system_update}')
             db.query(models.System).filter(models.System.id == system.id).update(system_update)
             db.flush()
             db.commit()
             db.refresh(_a_system)
     else:
-        logger.debug(f'creating system: {system.id}')
+        logger.debug(f'creating system {system.id}')
         _a_system = models.System(**system.dict())
         db.add(_a_system)
         db.flush()
@@ -353,13 +353,13 @@ def create_ppms_user(db: Session, user: schemas.User):
                 if getattr(_a_user, col) == user_update[col]:
                     user_update.pop(col)
         if user_update:
-            logger.debug(f'updating user: {user_update}')
+            logger.debug(f'updating user {user.username}: {user_update}')
             db.query(models.User).filter(models.User.username == user.username).update(user_update)
             db.flush()
             db.commit()
             db.refresh(_a_user)
     else:
-        logger.debug(f'creating user: {user.username}')
+        logger.debug(f'creating user {user.username}')
         _a_user = models.User(**user.dict())
         db.add(_a_user)
         db.flush()
@@ -479,13 +479,13 @@ def create_booking(db: Session, booking_session: schemas.Booking):
                 if getattr(booking, col) == booking_update[col]:
                     booking_update.pop(col)
         if booking_update:
-            logger.debug(f'updating booking: {booking_update}')
+            logger.debug(f'updating booking {session.id}: {booking_update}')
             db.query(models.Booking).filter(models.Booking.id == session.id).update(booking_update)
             db.flush()
             db.commit()
             db.refresh(booking)
     else:
-        logger.debug(f'creating booking: {session.id}')
+        logger.debug(f'creating booking {session.id}')
         booking = models.Booking(**session.dict())
         db.add(booking)
         db.flush()
@@ -550,13 +550,13 @@ def create_project(db: Session, project: schemas.Project):
                 if getattr(_a_project, col) == project_update[col]:
                     project_update.pop(col)
         if project_update:
-            logger.debug(f'updating project: {project_update}')
+            logger.debug(f'updating project {project.id}: {project_update}')
             db.query(models.Project).filter(models.Project.id == project.id).update(project_update)
             db.flush()
             db.commit()
             db.refresh(_a_project)
     else:
-        logger.debug(f'creating project: {project.id}')
+        logger.debug(f'creating project {project.id}')
         _a_project = models.Project(**project.dict())
         db.add(_a_project)
         db.flush()
@@ -619,7 +619,6 @@ def create_collection(db: Session, acollection: schemas.CollectionBase):
     logger.info(f">>>>>>>create collection: {acollection.name}")
     collection = db.query(models.Collection).\
             filter(models.Collection.name == acollection.name).one_or_none()
-    logger.info(f">>>>>>>create collection: {collection}")
     if not collection:
         logger.info(f">>>>>>>create collection: null <>>> create new one")
         collection = models.Collection(**acollection.dict())

@@ -66,44 +66,39 @@ def get_db_user(db: Session, login: str = None, userid: int = None, users_info: 
     return _db_user
 
 
-def sync_ppms_projects(db: Session, logger: logging.Logger):
-    _syncing_stat = pdb.crud.get_stat(db, 'syncing_projects')
-    if not _syncing_stat:
-        logger.debug("--> syncing_projects not exist, create it")
-        pdb.crud.set_stat(db, name='syncing_projects', value='True', desc='is system syncing projects', isstring=False)
-    else:
-        ### in the middle of a sync
-        if eval(_syncing_stat.value):
-            logger.debug("--> The system is in the middle of a syncing project")
-            return
-        else:
-            pdb.crud.set_stat(db, name='syncing_projects', value='True')
-    logger.debug("--> Sync PPMS weekly info: systems, projects, users")
-    systems = get_systems()
-    for system in systems:
-        pdb.crud.create_system(db, pdb.schemas.System( \
-                                                id=systems.get(system).get('systemid'), \
-                                                name=systems.get(system).get('systemname'), \
-                                                type=systems.get(system).get('systemtype') \
-                                            ))
+def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger = logger, alert: bool = False):
+    '''
+    sync projects from rims
+    - sync all projects from rims if projects_ids is empty list
+    - otherwise just sync the projects in projects_ids
+    '''
     users = get_ppms_users(config.get('ppms', 'coreid'))
     # convert to dict to allow easy lookup by login
     _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"] } for u in users }
-    _validated_db_users = [] # list of validated users
-    projects = get_projects()
+    _users_info_by_id = { u["id"]: { "login": u["login"], "email": u["email"], "name": u["name"] } for u in users }
+    _projects_by_id = {p['ProjectRef']: {k: v for k, v in p.items() if k != 'ProjectRef'} for p in get_projects()}
+    if len(project_ids) > 0:
+        # partial project sync
+        _project_ids = list(project_ids.keys())
+    else:
+        # full project sync
+        _project_ids = list(_projects_by_id.keys())
     #now get projects
-    for project in projects:
-        if int(project.get('ProjectRef')) < int(config.get('ppms', 'project_starting_ref', default=0)):
+    _validated_db_users = [] # list of validated users
+    for _project_id in _project_ids:
+        project = _projects_by_id[_project_id]
+        if _project_id < int(config.get('ppms', 'project_starting_ref', default=0)):
             continue
         # note that this information is already available in the get projects query --> quick
         ### add project
-        _projectSchema = pdb.schemas.Project(\
-                            id = project.get('ProjectRef'),\
-                            name = project.get('ProjectName'),\
-                            active = bool(project.get('Active')),\
-                            type = project.get('ProjectType'),\
-                            phase = project.get('Phase'),\
-                            description = project.get('Descr'))
+        _projectSchema = pdb.schemas.Project(
+                id = _project_id,
+                name = project.get('ProjectName'),
+                active = bool(project.get('Active')),
+                type = project.get('ProjectType'),
+                phase = project.get('Phase'),
+                description = project.get('Descr')
+            )
         _project_in_db = pdb.crud.create_project(db, _projectSchema)
         ###### get more information
         if not _project_in_db.collection:
@@ -120,26 +115,52 @@ def sync_ppms_projects(db: Session, logger: logging.Logger):
                 pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
 
         # now with project users
-        _project_users = [n for n in [m['login'] for m in get_project_members(_project_in_db.id) if m.get('login')] if n.strip()]
-        logger.debug(f'project {_project_in_db.id} users: {_project_users}')
+        _project_users = [n for n in [m['login'] for m in get_project_members(_project_id) if m.get('login')] if n.strip()]
+        # and extra users listed with project id, ie. booking users/assistants
+        for usrid in project_ids.get(_project_id, []):
+            usrname = _users_info_by_id[usrid]['login']
+            if usrname not in _project_users:
+                _project_users.append(usrname)
+        alogger.debug(f'project {_project_id} users: {_project_users}')
         _validated_project_users = []
         for _project_user in _project_users:
             if _project_user not in _validated_db_users:
-                logger.debug(f"Checking project user: {_project_user}")
+                alogger.debug(f"checking project user: {_project_user}")
                 if not _project_user:
-                    logger.debug(f"{_project_user} is empty. ignore")
+                    alogger.debug(f"{_project_user} is empty. ignore")
                     continue
-                _db_user = get_db_user(db, login=_project_user, users_info=_users_info, alert=True)
+                _db_user = get_db_user(db, login=_project_user, users_info=_users_info, alert=alert)
                 _validated_db_users.append(_project_user)
             else:
-                logger.debug(f"Already checked project user: {_project_user}")
+                alogger.debug(f"already checked project user: {_project_user}")
             _validated_project_users.append(_project_user)
-        pdb.crud.update_project_users(db, _project_in_db.id, _validated_project_users)
+        pdb.crud.update_project_users(db, _project_id, _validated_project_users)
+
+    alogger.debug(f'projects: {len(_project_ids)}, unique project users {len(_validated_db_users)}')
 
     # done syncing
-    logger.debug('--> Done syncing')
-    logger.debug(f'Projects: {len(projects)}, Unique project users {len(_validated_db_users)}')
-    pdb.crud.set_stat(db, name='syncing_projects', value='False')
+    alogger.debug('--> done syncing')
     # db.close()
 
-
+def sync_ppms_projects(db: Session, alogger: logging.Logger = logger):
+    _syncing_stat = pdb.crud.get_stat(db, 'syncing_projects')
+    if not _syncing_stat:
+        alogger.debug("--> syncing_projects not exist, create it")
+        pdb.crud.set_stat(db, name='syncing_projects', value='True', desc='is system syncing projects', isstring=False)
+    else:
+        ### in the middle of a sync
+        if eval(_syncing_stat.value):
+            alogger.debug("--> the system is in the middle of a project sync")
+            return
+        else:
+            pdb.crud.set_stat(db, name='syncing_projects', value='True')
+    alogger.debug("--> sync PPMS info: systems, projects, users")
+    systems = get_systems()
+    for system in systems:
+        pdb.crud.create_system(db, pdb.schemas.System(
+                id=systems.get(system).get('systemid'),
+                name=systems.get(system).get('systemname'),
+                type=systems.get(system).get('systemtype')
+            ))
+    sync_projects(db, alogger=alogger, alert=True)
+    pdb.crud.set_stat(db, name='syncing_projects', value='False')
