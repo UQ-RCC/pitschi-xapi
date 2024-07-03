@@ -33,7 +33,7 @@ def sync_ppms_bookings() -> None:
         _bookings = get_daily_bookings(config.get('ppms', 'coreid'), _today_tz)
         logger.debug(f'bookings: {len(_bookings)}')
         _training_sessions_by_id = {ts['SessionID']: {k: v for k, v in ts.items() if k != 'SessionID'}
-            for ts in get_daily_training(config.get('ppms', 'coreid'), _today_tz)}
+            for ts in get_daily_training(config.get('ppms', 'coreid'), _today_tz) if ts['Training organised by'] == ts['User full Name']}
         _training_count = 0
         _booking_project_ids = {}
         for _booking in _bookings:
@@ -77,6 +77,7 @@ def sync_ppms_bookings() -> None:
         for _booking in _bookings:
             logger.debug(f'_booking: {_booking}')
             try:
+                _booking_user = pdb.crud.get_ppms_user_by_uid(db, _booking.get('userId'))
                 _booking_object = pdb.schemas.Booking(
                         id = _booking.get('Ref (session)'),
                         bookingdate = datetime.datetime.strptime(_booking.get('Date'), '%Y/%m/%d').date(),
@@ -86,11 +87,12 @@ def sync_ppms_bookings() -> None:
                         systemid = _booking.get('systemId'),
                         status = _booking.get('status'),
                         projectid = _booking.get('projectId'),
-                        username = pdb.crud.get_ppms_user_by_uid(db, _booking.get('userId'))[0].username
+                        username = _booking_user[0].username if len(_booking_user) else None
                     )
                 if _booking.get('assistantId'):
-                    logger.debug(f'setting assistant: {_booking["assistantId"]}')
-                    _booking_object.assistant = pdb.crud.get_ppms_user_by_uid(db, _booking['assistantId'])[0].username
+                    _assistant = pdb.crud.get_ppms_user_by_uid(db, _booking['assistantId'])
+                    _booking_object.assistant = _assistant[0].username if len(_assistant) else None
+                    logger.debug(f'booking assistant: {_booking_object.assistant}')
                 pdb.crud.create_booking(db, _booking_object)
             except Exception as e:
                 logger.error(f'problem creating booking id {_booking.get("Ref (session)")}', exc_info=True)
