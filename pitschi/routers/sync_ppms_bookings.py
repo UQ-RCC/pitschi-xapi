@@ -32,6 +32,8 @@ def sync_ppms_bookings() -> None:
         _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()
         _bookings = get_daily_bookings(config.get('ppms', 'coreid'), _today_tz)
         logger.debug(f'bookings: {len(_bookings)}')
+        # training sessions can have multiple records -- use the record with
+        # 'Training organised by' == 'User full Name' to set booking project/user
         _training_sessions_by_id = {ts['SessionID']: {k: v for k, v in ts.items() if k != 'SessionID'}
             for ts in get_daily_training(config.get('ppms', 'coreid'), _today_tz) if ts['Training organised by'] == ts['User full Name']}
         _training_count = 0
@@ -70,6 +72,8 @@ def sync_ppms_bookings() -> None:
                     _booking_project_ids[_project_id].append(_booking['userId'])
                 if _booking.get('assistantId') and _booking['assistantId'] not in _booking_project_ids[_project_id]:
                     _booking_project_ids[_project_id].append(_booking['assistantId'])
+            else:
+                _booking['projectId'] = None
         logger.debug(f'get project and user details for {len(_bookings)} bookings ({_training_count} training)')
         # sync project and user info for the daily bookings
         ppms_utils.sync_projects(db, alogger=logger, project_ids=_booking_project_ids)

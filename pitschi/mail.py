@@ -32,6 +32,9 @@ def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc
     """
     ### create connectoin first
     ### try 3 times
+    if config.get('email', 'enabled', default='yes') == 'no':
+        logger.info(f'send_mail to: {to_address}, subj: {subject}')
+        return
     connected = False
     attempts = 0
     while not connected:
