@@ -254,7 +254,7 @@ def send_email(db, datasetinfo, result, messages):
             <head></head>
             <body>
                 <p>Dear {datasetinfo.user.name},<br /></p>
-                <p>Pitschi has successfully ingested dataset from {datasetinfo.system.name}.</p>
+                <p>Pitschi has successfully ingested dataset from {datasetinfo.system.name} into the Clowder space for project "{datasetinfo.project.name}".</p>
 
                 <p>You can view the dataset using the following systems (please allow time for synchronization):</p>
                     <ul>

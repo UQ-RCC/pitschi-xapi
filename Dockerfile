@@ -8,7 +8,9 @@ RUN apk add --no-cache --virtual .build-deps \
     musl-dev \
     postgresql-dev 
     
-COPY . .
+COPY LICENSE README.md requirements.txt setup.py .
+COPY pitschi pitschi
+COPY conf/pitschixapi.conf.example conf/
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN python setup.py install

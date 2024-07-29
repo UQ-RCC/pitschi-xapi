@@ -162,7 +162,7 @@ def send_import_email(db, _dataset_info):
                     <head></head>
                     <body>
                         <p>Dear {_dataset_info.user.name},<br /></p>
-                        <p>Pitschi has successfully imported dataset from {_dataset_info.system.name} into RDM.</p>
+                        <p>Pitschi has successfully imported dataset from {_dataset_info.system.name} into RDM {_dataset_info.project.collection} for project "{_dataset_info.project.name}".</p>
 
                         <p>You can view the dataset using the following systems (please allow time for synchronization):</p>
                             <ul>

@@ -30,22 +30,33 @@ def sync_ppms_bookings() -> None:
     with sessionmaker.context_session() as db:
         logger.debug('query ppms bookings of today')
         _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()
-        _bookings = get_daily_bookings(config.get('ppms', 'coreid'), _today_tz)
+        _bookings = get_daily_bookings(_today_tz)
         logger.debug(f'bookings: {len(_bookings)}')
         # training sessions can have multiple records -- use the record with
         # 'Training organised by' == 'User full Name' to set booking project/user
         _training_sessions_by_id = {ts['SessionID']: {k: v for k, v in ts.items() if k != 'SessionID'}
-            for ts in get_daily_training(config.get('ppms', 'coreid'), _today_tz) if ts['Training organised by'] == ts['User full Name']}
+            for ts in get_daily_training(_today_tz) if ts['Training organised by'] == ts['User full Name']}
         _training_count = 0
         _booking_project_ids = {}
         for _booking in _bookings:
             _booking_id = _booking.get('Ref (session)')
-            _booking_details_list = get_booking_details(config.get('ppms', 'coreid'), _booking_id)
+            _booking_details_list = get_booking_details(_booking.get('coreid'), _booking_id)
             if len(_booking_details_list) == 0:
                 logger.debug(f'get booking details error: booking id {_booking_id}')
                 continue
             _booking_details = _booking_details_list[0]
-            _booking['systemId'] = _booking_details.get('systemId')
+            _booking['systemId'] = None
+            if _booking_details.get('systemId'):
+                try:
+                    _system = pdb.crud.create_system(db, pdb.schemas.System(
+                        id = _booking_details.get('systemId'),
+                        coreid = _booking.get('coreid'),
+                        type = _booking_details.get('systemType'),
+                        name = _booking_details.get('systemName'))
+                    )
+                    _booking['systemId'] = _system.id
+                except:
+                    logger.warning(f'get booking system error: booking id {_booking_id}', exc_info=True)
             _booking['status'] = _booking_details.get('status')
             _training_session = _training_sessions_by_id.get(_booking_id)
             if _training_session:

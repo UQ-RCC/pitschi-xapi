@@ -122,6 +122,7 @@ class DailyTask(DailyTaskBase):
 
 class System(BaseModel):
     id: int
+    coreid: int
     type: str
     name: str
     bookings: List[Booking] = []
@@ -156,6 +157,7 @@ class CollectionCacheBase(BaseModel):
 
 class Project(BaseModel):
     id: int
+    coreid: int
     name: str
     active: bool = True
     type: str

@@ -99,6 +99,7 @@ class File(Base):
 class System(Base):
     __tablename__ = 'system'
     id = Column(Integer, primary_key=True, index=True)
+    coreid = Column(Integer, primary_key=False, index=False, nullable=False)
     type = Column(String, primary_key=False, index=False, nullable=False)
     name = Column(String, primary_key=False, index=False, nullable=False)
     bookings = relationship("Booking", back_populates="system")
@@ -134,7 +135,7 @@ class User(Base):
 class Project(Base):
     __tablename__ = 'project'
     id = Column(Integer, primary_key=True, index=True)
-    coreid = Column(Integer, primary_key=False, index=False, nullable=False, default=2)
+    coreid = Column(Integer, primary_key=False, index=False, nullable=False)
     name = Column(String, primary_key=False, index=False, nullable=False)
     active = Column(Boolean, primary_key=False, index=False, nullable=False, default=True)
     type = Column(String, primary_key=False, index=False, nullable=False)

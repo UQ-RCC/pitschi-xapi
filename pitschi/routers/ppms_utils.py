@@ -39,7 +39,7 @@ def de_dup_userid(db: Session, login: str, userid: int, users_info: dict, alert:
                     send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
 
 
-def get_db_user(db: Session, login: str = None, userid: int = None, users_info: dict = None, alert: bool = False):
+def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int = None, users_info: dict = None, alert: bool = False):
     '''
     get user info by login or userid from db
     use users_info to add missing user to db, or update db user if needed
@@ -47,7 +47,7 @@ def get_db_user(db: Session, login: str = None, userid: int = None, users_info: 
     '''
     _usr = {}
     if userid:
-        _usrs = get_ppms_user_by_id(userid, config.get('ppms', 'coreid'))
+        _usrs = get_ppms_user_by_id(userid, coreid)
         if _usrs:
             _usr = _usrs[0]
     else:
@@ -72,7 +72,7 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
     - sync all projects from rims if projects_ids is empty list
     - otherwise just sync the projects in projects_ids
     '''
-    users = get_ppms_users(config.get('ppms', 'coreid'))
+    users = get_ppms_users()
     # convert to dict to allow easy lookup by login
     _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"] } for u in users }
     _users_info_by_id = { u["id"]: { "login": u["login"], "email": u["email"], "name": u["name"] } for u in users }
@@ -93,6 +93,7 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
         ### add project
         _projectSchema = pdb.schemas.Project(
                 id = _project_id,
+                coreid = project.get('CoreFacilityRef'),
                 name = project.get('ProjectName'),
                 active = bool(project.get('Active')),
                 type = project.get('ProjectType'),
@@ -102,7 +103,7 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
         _project_in_db = pdb.crud.create_project(db, _projectSchema)
         ###### get more information
         if not _project_in_db.collection:
-            _q_collection = get_rdm_collection(config.get('ppms', 'coreid'), _project_in_db.id)
+            _q_collection = get_rdm_collection(_project_in_db.coreid, _project_in_db.id)
         else:
             _q_collection = _project_in_db.collection
         if _q_collection and '-' in _q_collection:
@@ -129,7 +130,7 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
                 if not _project_user:
                     alogger.debug(f"{_project_user} is empty. ignore")
                     continue
-                _db_user = get_db_user(db, login=_project_user, users_info=_users_info, alert=alert)
+                _db_user = get_db_user(db, login=_project_user, coreid=_project_in_db.coreid, users_info=_users_info, alert=alert)
                 _validated_db_users.append(_project_user)
             else:
                 alogger.debug(f"already checked project user: {_project_user}")
@@ -158,9 +159,10 @@ def sync_ppms_projects(db: Session, alogger: logging.Logger = logger):
     systems = get_systems()
     for system in systems:
         pdb.crud.create_system(db, pdb.schemas.System(
-                id=systems.get(system).get('systemid'),
-                name=systems.get(system).get('systemname'),
-                type=systems.get(system).get('systemtype')
-            ))
+            id = system.get('systemid'),
+            coreid = system.get('coreid'),
+            type = system.get('systemtype'),
+            name = system.get('systemname'))
+        )
     sync_projects(db, alogger=alogger, alert=True)
     pdb.crud.set_stat(db, name='syncing_projects', value='False')

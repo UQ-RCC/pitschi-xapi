@@ -18,7 +18,7 @@ def send_teams_notification(type, title, message):
     """
     send a notification to teams
     """
-    if config.get('miscs', 'xapi_alerts_enabled', default='yes') == 'no':
+    if config.get('miscs', 'xapi_alerts_enabled', default='True').lower() == 'false':
         return
     url = f"{config.get('miscs', 'teams_webhook')}"
     if type == "Error":

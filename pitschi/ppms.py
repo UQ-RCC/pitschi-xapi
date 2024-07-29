@@ -39,10 +39,10 @@ def get_ppms_user_by_id(uid:int, coreid:int):
     return []
 
 
-def get_ppms_users(coreid:int):
+def get_ppms_users():
     logger.debug("@get_ppms_users: get all ppms users")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
-    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report1335&coreid={coreid}"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report1335"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -71,7 +71,8 @@ def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.dat
             return response.json(strict=False)
     return []
 
-def get_daily_bookings(coreid:int , date: datetime.date):
+
+def get_daily_bookings_by_coreid(coreid:int, date: datetime.date):
     logger.debug("@get_daily_bookings: get bookings for given date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
@@ -86,6 +87,15 @@ def get_daily_bookings(coreid:int , date: datetime.date):
         else:
             return response.json(strict=False)
     return []
+
+
+def get_daily_bookings(date: datetime.date):
+    sessions = []
+    for coreid in json.loads(config.get('ppms', 'coreids')):
+        for session in get_daily_bookings_by_coreid(coreid, date):
+            session['coreid'] = coreid
+            sessions.append(session)
+    return sessions
 
 
 def get_booking_details(coreid:int , sessionid: int):
@@ -104,7 +114,7 @@ def get_booking_details(coreid:int , sessionid: int):
     return []
 
 
-def get_daily_training(coreid:int, date: datetime.date):
+def get_daily_training_by_coreid(coreid:int, date: datetime.date):
     logger.debug("@get_daily_training: get training for given date")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
@@ -121,6 +131,15 @@ def get_daily_training(coreid:int, date: datetime.date):
     return []
 
 
+def get_daily_training(date: datetime.date):
+    sessions = []
+    for coreid in json.loads(config.get('ppms', 'coreids')):
+        for session in get_daily_training_by_coreid(coreid, date):
+            session['coreid'] = coreid
+            sessions.append(session)
+    return sessions
+
+
 def get_systems():
     logger.debug("get all systems")
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
@@ -131,20 +150,20 @@ def get_systems():
     response = requests.request("POST", url, headers=headers, data=payload)
     if response.ok:
         if response.status_code == 204:
-            return {}
+            return []
         else:
             # format is in csv
             _systems_text = response.text
             _csv_reader = csv.reader(_systems_text.split('\n'), delimiter=',')
             _csv_reader.__next__()
-            systems = {}
+            systems = []
             for row in _csv_reader:
                 if(len(row) > 3):
                     _coreid = int(row[0])
                     _systemid = int(row[1])
                     _systemtype = row[2]
                     _systemname = row[3]
-                    systems[_systemname] = {'coreid': _coreid, 'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname}
+                    systems.append({'coreid': _coreid, 'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname})
             return systems
     return {}
 
@@ -232,7 +251,7 @@ def get_project_members(projectid: int):
             return members
     else:
         return []
-    
+
 def get_rdm_collection(coreid: int, projectid: int):
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     payload=f"apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'qcollection_action')}&projectId={projectid}&coreid={coreid}&outformat=json"

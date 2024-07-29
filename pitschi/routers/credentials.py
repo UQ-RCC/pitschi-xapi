@@ -69,6 +69,6 @@ async def get_ppms_api_config(credentials: HTTPBasicCredentials = Depends(securi
             headers={"WWW-Authenticate": "Basic"},
         )
     # allowed unencrypted field list excludes keys
-    allowed_fields = ['booking_query', 'coreid', 'ppms_url', 'project_starting_ref',
+    allowed_fields = ['booking_query', 'coreids', 'ppms_url', 'project_starting_ref',
         'q_collection_field', 'qcollection_action', 'timezone']
     return { f: config.get('ppms', f) for f in allowed_fields }
