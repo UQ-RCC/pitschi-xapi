@@ -86,8 +86,11 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
     #now get projects
     _validated_db_users = [] # list of validated users
     for _project_id in _project_ids:
-        project = _projects_by_id[_project_id]
         if _project_id < int(config.get('ppms', 'project_starting_ref', default=0)):
+            continue
+        project = _projects_by_id.get(_project_id)
+        if project is None:
+            alogger.error(f'project id {_project_id} not found - is it inactive?')
             continue
         # note that this information is already available in the get projects query --> quick
         ### add project

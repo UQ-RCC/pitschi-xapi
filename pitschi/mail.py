@@ -55,6 +55,12 @@ def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc
         sender = config.get('email', 'address')
         email['Subject'] = subject
         email['From'] = sender
+        for addr in to_address.split(','):
+            if addr == sender:
+                # if already to sender, don't add sender
+                to_sender = False
+                cc_sender = False
+                break
         if to_sender:
             email['To'] = to_address+','+sender
         else:
