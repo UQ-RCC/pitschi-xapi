@@ -55,8 +55,11 @@ def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc
         sender = config.get('email', 'address')
         email['Subject'] = subject
         email['From'] = sender
+        sender_aliases = [sender]
+        if sender.endswith('@rcc.uq.edu.au'):
+            sender_aliases.append(sender.split('@')[0] + '@uq.edu.au')
         for addr in to_address.split(','):
-            if addr == sender:
+            if addr in sender_aliases:
                 # if already to sender, don't add sender
                 to_sender = False
                 cc_sender = False
