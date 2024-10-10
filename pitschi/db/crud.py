@@ -5,7 +5,8 @@ from pydantic import parse_obj_as
 from urllib.parse import quote
 from . import models, schemas
 from typing import List
-from datetime import enum, datetime,timedelta
+from datetime import datetime,timedelta
+import enum
 import pytz
 import pitschi.config as config
 import pitschi.utils as utils
