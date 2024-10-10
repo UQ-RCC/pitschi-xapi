@@ -31,7 +31,9 @@ async def get_failed_datasets(user: dict = Depends(keycloak.decode), db: Session
             )
         else:
             try:
-                return pdb.crud.get_datasets_to_reset(db)
+                rval = pdb.crud.get_datasets_to_reset(db)
+                logger.info(f'get failed dataset {rval}')
+                return rval
             except Exception as e:
                 return JSONResponse(
                     status_code=400,
