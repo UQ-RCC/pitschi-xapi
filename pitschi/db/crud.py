@@ -5,12 +5,14 @@ from pydantic import parse_obj_as
 from urllib.parse import quote
 from . import models, schemas
 from typing import List
-import enum, datetime
+from datetime import enum, datetime,timedelta
 import pytz
 import pitschi.config as config
 import pitschi.utils as utils
 import logging
 import pitschi.mail as mail
+from sqlalchemy import func
+
 logger = logging.getLogger('pitschixapi')
 
 class PermissionException(Exception):
@@ -72,6 +74,13 @@ def create_admin_if_not_exist(db: Session):
 
 
 ################### datasets
+def get_datasets_to_reset(db: Session):
+    last_month = datetime.now() - timedelta(days=30)
+    return db.query(models.Dataset).\
+            filter(and_(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]),models.Dataset.status == models.Status.failed)).\
+            join(models.Dataset.booking).\
+            filter(models.Booking.bookingdate >=last_month)
+
 def get_datasets(db: Session, username: str):
     return db.query(models.Dataset).\
             join(models.Dataset.booking).\
@@ -211,7 +220,7 @@ def update_dataset_space_datasetid(db: Session, datasetid: int, spaceid: str, cl
 def update_dataset_mode_status(db: Session, datasetid: int, mode: models.Mode, status: models.Status):
     update_obj = {"mode": mode, "status": status}
     if status != models.Status.ongoing:
-        update_obj['finished'] = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+        update_obj['finished'] = datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
     db.query(models.Dataset).\
         filter(models.Dataset.id == datasetid).\
         update({"mode": mode, "status": status})
@@ -220,7 +229,7 @@ def update_dataset_mode_status(db: Session, datasetid: int, mode: models.Mode, s
 def update_file_mode_status(db: Session, fileid: int, mode: models.Mode, status: models.Status):
     update_obj = {"mode": mode, "status": status}
     if status != models.Status.ongoing:
-        update_obj['finished'] = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+        update_obj['finished'] = datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
     db.query(models.File).\
         filter(models.File.id == fileid).\
         update(update_obj)
@@ -758,4 +767,4 @@ def complete_daily_task(db: Session, taskid: int, status: models.Status):
     """
     db.query(models.DailyTask).\
         filter(models.DailyTask.id == taskid).\
-        update({"status": status, "finished": datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))  })
+        update({"status": status, "finished": datetime.now(pytz.timezone(config.get('ppms', 'timezone')))  })
