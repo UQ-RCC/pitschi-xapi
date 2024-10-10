@@ -80,7 +80,7 @@ def get_datasets_to_reset(db: Session):
     return db.query(models.Dataset).\
             filter(and_(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]),models.Dataset.status == models.Status.failed)).\
             join(models.Dataset.booking).\
-            filter(models.Booking.bookingdate >=last_month)
+            filter(models.Booking.bookingdate >=last_month).all()
 
 def get_datasets(db: Session, username: str):
     return db.query(models.Dataset).\
