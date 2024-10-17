@@ -86,7 +86,7 @@ def get_datasets_to_reset(db: Session):
     last_month = datetime.now() - timedelta(days=30)
     return (
         db.query(models.Dataset, models.Booking).\
-        join(models.Booking, models.Dataset.bookingid == models.Booking.id).\
+        join(models.Dataset.booking ).\
         filter(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]), 
             models.Dataset.status == models.Status.failed,
             models.Booking.bookingdate >= last_month).all()
