@@ -75,12 +75,23 @@ def create_admin_if_not_exist(db: Session):
 
 
 ################### datasets
-def get_datasets_to_reset(db: Session):
+""" def get_datasets_to_reset(db: Session):
     last_month = datetime.now() - timedelta(days=30)
     return db.query(models.Dataset).\
             filter(and_(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]),models.Dataset.status == models.Status.failed)).\
             join(models.Dataset.booking).\
-            filter(models.Booking.bookingdate >=last_month).all()
+            filter(models.Booking.bookingdate >=last_month).all() """
+
+def get_datasets_to_reset(db: Session):
+    last_month = datetime.now() - timedelta(days=30)
+    return (
+        db.query(models.Dataset).\
+        join(models.Booking, models.Dataset.bookingid == models.Booking.id).\
+        filter(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]), 
+            models.Dataset.status == models.Status.failed,
+            models.Booking.bookingdate >= last_month).all()
+    )
+
 
 def get_datasets(db: Session, username: str):
     return db.query(models.Dataset).\
