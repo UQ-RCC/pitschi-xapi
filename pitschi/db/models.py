@@ -1,5 +1,5 @@
 import enum, datetime
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, Date, Time, Interval, ForeignKeyConstraint, null
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Enum, DateTime, func, Date, Time, Interval, ForeignKeyConstraint, null
 from sqlalchemy.orm import relationship
 
 from sqlalchemy.ext.mutable import MutableList
@@ -49,8 +49,8 @@ class Dataset(Base):
     networkpath = Column(String, unique=False, primary_key=False, index=False, nullable=False)
     relpathfromrootcollection = Column(String, unique=False, primary_key=False, index=False, nullable=False)
     name = Column(String, unique=False, primary_key=False, index=False, nullable=False)
-    received =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
-    modified =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    received =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now()))
+    modified =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now())) 
     finished =  Column(DateTime, primary_key=False, index=False, nullable=True)
     desc = Column(String, unique=False, primary_key=False, index=False, nullable=True)
     # todo: change to enum
@@ -89,8 +89,8 @@ class File(Base):
     # todo: change to enum
     mode = Column(Enum(Mode), primary_key=False, index=False, nullable=False, default=Mode.intransit) 
     status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
-    received =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
-    modified =  Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    received =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now()) )
+    modified =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now())  )
     finished =  Column(DateTime, primary_key=False, index=False, nullable=True)
     fileid = Column(String, unique=False, primary_key=False, index=False, nullable=False, default="")
     dataset_id = Column(Integer, ForeignKey("dataset.id"), nullable=False)
@@ -111,7 +111,7 @@ class DailyTask(Base):
     systemid = Column(Integer, ForeignKey("system.id"), nullable=True)
     system = relationship("System", back_populates="dailytasks")
     status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
-    start = Column(DateTime, primary_key=False, index=False, nullable=False, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    start = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now())  )
     finished = Column(DateTime, primary_key=False, index=False, nullable=True)
     
 class UserProject(Base):
@@ -155,7 +155,7 @@ class CollectionCache(Base):
     inodesused = Column(Integer, primary_key=False, index=False, nullable=True)
     blocklimitgb = Column(Float, primary_key=False, index=False, nullable=True)
     blockusedgb = Column(Float, primary_key=False, index=False, nullable=True)
-    lastupdated = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    lastupdated = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=True, default=func.timezone('UTC', func.now())) 
     cache = relationship("Cache", back_populates="collections")
     collection = relationship("Collection", back_populates="caches")
 
@@ -176,7 +176,7 @@ class Collection(Base):
     blocklimitgb = Column(Float, primary_key=False, index=False, nullable=True)
     blockusedgb = Column(Float, primary_key=False, index=False, nullable=True)
     capacitygb = Column(Float, primary_key=False, index=False, nullable=True)
-    lastupdated = Column(DateTime, primary_key=False, index=False, nullable=True, default=datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))) )
+    lastupdated = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=True, default=func.timezone('UTC', func.now()))
     projects = relationship("Project", back_populates="collectionobj")
     caches = relationship("CollectionCache", back_populates="collection")
 

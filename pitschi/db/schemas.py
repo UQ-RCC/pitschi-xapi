@@ -4,6 +4,7 @@ from pydantic import BaseModel, Json
 from . import models
 import pytz, datetime
 import pitschi.config as config
+
 #################################
 ### system stats
 #################################
@@ -47,8 +48,8 @@ class FileBase(BaseModel):
     size_kb: float
     status: models.Status = models.Status.ongoing
     mode: models.Mode = models.Mode.intransit
-    received: datetime.datetime = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
-    modified: datetime.datetime = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+    received: datetime.datetime = datetime.datetime.now(pytz.utc)
+    modified: datetime.datetime = datetime.datetime.now(pytz.utc)
     finished: datetime.datetime = None
     fileid: Optional[str] = None
 
@@ -70,8 +71,8 @@ class DatasetBase(BaseModel):
     origionalpath: str   # C:\dekstop\folder1\folder2
     networkpath: str     # \\data.qbi.uq.edu.au\CMM4CEED-Q3504\folder1\folder2
     name: str
-    received: datetime.datetime = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
-    modified: datetime.datetime = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+    received: datetime.datetime = datetime.datetime.now(pytz.utc)
+    modified: datetime.datetime = datetime.datetime.now(pytz.utc)
     finished: datetime.datetime = None
     desc: Optional[str] = None
     status: models.Status = models.Status.ongoing
@@ -111,7 +112,7 @@ class Booking(BaseModel):
 
 class DailyTaskBase(BaseModel):
     systemid: Optional[int] = None
-    start: datetime.datetime = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+    start: datetime.datetime = datetime.datetime.now(pytz.utc)
     finished: datetime.datetime = None
     status: models.Status = models.Status.ongoing
 

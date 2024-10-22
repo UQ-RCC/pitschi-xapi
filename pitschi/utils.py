@@ -10,8 +10,18 @@ def localize_time(datetimeobject):
     else:
         return pytz.timezone(config.get('ppms', 'timezone')).localize(datetimeobject, is_dst=None)
 
+#converts navive datetime object to UTC and then convert it to ppms timezone
 def convert_to_xapi_tz(datetimeobject):
     return pytz.timezone('utc').localize(datetimeobject, is_dst=None).astimezone(pytz.timezone(config.get('ppms', 'timezone')))
+
+def convert_utc_to_ppms(datetimeobject):
+    return datetimeobject.astimezone(pytz.timezone(config.get('ppms', 'timezone')))
+
+def convert_to_utc(datetimeobject):
+    if datetimeobject.tzinfo:
+        return datetimeobject.astimezone(pytz.utc)
+    else:
+        return pytz.timezone(config.get('ppms', 'timezone')).localize(datetimeobject, is_dst=None).astimezone(pytz.utc)
 
 
 def get_encoding_type(file):

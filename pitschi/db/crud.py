@@ -133,13 +133,13 @@ def get_file_using_path(db: Session, datasetid: int, filepath: str):
 def create_dataset(db: Session, dataset: schemas.DatasetCreate):
     files = dataset.files
     dataset.files = []
-    # handle datetime
+    # handle datetime, convert the datatime to utc
     if dataset.received:
-        dataset.received = utils.localize_time(dataset.received)
+        dataset.received = utils.convert_to_utc(dataset.received)
     if dataset.finished:
-        dataset.finished = utils.localize_time(dataset.finished)
+        dataset.finished = utils.convert_to_utc(dataset.finished)
     if dataset.modified:
-        dataset.modified = utils.localize_time(dataset.modified)
+        dataset.modified = utils.convert_to_utc(dataset.modified)
     datasetModel = models.Dataset(**dataset.dict())
     db.add(datasetModel)
     db.flush()
@@ -148,11 +148,11 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
         afile = models.File(**file.dict())
         afile.dataset_id = datasetModel.id
         if file.received:
-            file.received = utils.localize_time(file.received)
+            file.received = utils.convert_to_utc(file.received)
         if file.finished:
-            file.finished = utils.localize_time(file.finished)
+            file.finished = utils.convert_to_utc(file.finished)
         if file.modified:
-            file.modified = utils.localize_time(file.modified)
+            file.modified = utils.convert_to_utc(file.modified)
         db.add(afile)
         db.flush()
         dataset.files.append(afile)
@@ -206,11 +206,11 @@ def send_import_email(db, _dataset_info):
 
 def create_file(db: Session, file: schemas.FileCreate):
     if file.received:
-        file.received = utils.localize_time(file.received)
+        file.received = utils.convert_to_utc(file.received)
     if file.finished:
-        file.finished = utils.localize_time(file.finished)
+        file.finished = utils.convert_to_utc(file.finished)
     if file.modified:
-        file.modified = utils.localize_time(file.modified)
+        file.modified = utils.convert_to_utc(file.modified)
     afile = models.File(**file.dict())
     afile.dataset_id = file.dataset_id
     db.add(afile)
@@ -261,11 +261,11 @@ def update_file(db: Session, fileid: int, updatedata: dict):
 def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate):
     files = dataset.files
     if dataset.received:
-        dataset.received = utils.localize_time(dataset.received)
+        dataset.received = utils.convert_to_utc(dataset.received)
     if dataset.finished:
-        dataset.finished = utils.localize_time(dataset.finished)
+        dataset.finished = utils.convert_to_utc(dataset.finished)
     if dataset.modified:
-        dataset.modified = utils.localize_time(dataset.modified)
+        dataset.modified = utils.convert_to_utc(dataset.modified)
     _dataset_db = get_dataset(db, datasetid)
     _ds_mode_db = _dataset_db.mode
     _ds_status_db = _dataset_db.status
@@ -286,11 +286,11 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
         db.commit()
         for file in files:
             if file.received:
-                file.received = utils.localize_time(file.received)
+                file.received = utils.convert_to_utc(file.received)
             if file.finished:
-                file.finished = utils.localize_time(file.finished)
+                file.finished = utils.convert_to_utc(file.finished)
             if file.modified:
-                file.modified = utils.localize_time(file.modified)
+                file.modified = utils.convert_to_utc(file.modified)
             _file_in_db = get_file_using_path(db, datasetid, file.path)
             if _file_in_db:
                 existing_f_dic = row2dict(_file_in_db, True)

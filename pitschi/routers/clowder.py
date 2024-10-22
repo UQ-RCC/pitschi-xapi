@@ -58,11 +58,11 @@ async def get_datasets(login: str, machine: str="", localpath: str="", \
         datasets =  pdb.crud.get_datasets(db, login)
     for dataset in datasets:
         if dataset.received:
-            dataset.received = utils.convert_to_xapi_tz(dataset.received)
+            dataset.received = utils.convert_utc_to_ppms(dataset.received)
         if dataset.finished:
-            dataset.finished = utils.convert_to_xapi_tz(dataset.finished)    
+            dataset.finished = utils.convert_utc_to_ppms(dataset.finished)    
         if dataset.modified:
-            dataset.modified = utils.convert_to_xapi_tz(dataset.modified)
+            dataset.modified = utils.convert_utc_to_ppms(dataset.modified)
     return datasets
     
 # Technically, an update to dataset should trigger reindexing as well
@@ -94,11 +94,11 @@ async def update_file(fileid: int, \
         )
     _afile =  pdb.crud.get_file(db, fileid)
     if _afile.received:
-        _afile.received = utils.convert_to_xapi_tz(_afile.received)
+        _afile.received = utils.convert_utc_to_ppms(_afile.received)
     if _afile.finished:
-        _afile.finished = utils.convert_to_xapi_tz(_afile.finished)
+        _afile.finished = utils.convert_utc_to_ppms(_afile.finished)
     if _afile.modified:
-        _afile.modified = utils.convert_to_xapi_tz(_afile.modified)
+        _afile.modified = utils.convert_utc_to_ppms(_afile.modified)
     return _afile
     
 
@@ -116,19 +116,19 @@ async def get_dataset(datasetid: int, \
     _adataset =  pdb.crud.get_dataset(db, datasetid)
     if _adataset:
         if _adataset.received:
-            _adataset.received = utils.convert_to_xapi_tz(_adataset.received)
+            _adataset.received = utils.convert_utc_to_ppms(_adataset.received)
         if _adataset.finished:
-            _adataset.finished = utils.convert_to_xapi_tz(_adataset.finished)
+            _adataset.finished = utils.convert_utc_to_ppms(_adataset.finished)
         if _adataset.modified:
-            _adataset.modified = utils.convert_to_xapi_tz(_adataset.modified)
+            _adataset.modified = utils.convert_utc_to_ppms(_adataset.modified)
         files =  pdb.crud.get_files_in_dataset(db, _adataset.id)
         for file in files:
             if file.received:
-                file.received = utils.convert_to_xapi_tz(file.received)
+                file.received = utils.convert_utc_to_ppms(file.received)
             if file.finished:
-                file.finished = utils.convert_to_xapi_tz(file.finished)    
+                file.finished = utils.convert_utc_to_ppms(file.finished)    
             if file.modified:
-                file.modified = utils.convert_to_xapi_tz(file.modified)
+                file.modified = utils.convert_utc_to_ppms(file.modified)
         _adataset.files = files
     return _adataset
     
@@ -147,9 +147,9 @@ async def get_booking_datasets(bookingid: int, \
     datasets = pdb.crud.get_booking_datasets(db, bookingid)
     for dataset in datasets:
         if dataset.received:
-            dataset.received = utils.convert_to_xapi_tz(dataset.received)
+            dataset.received = utils.convert_utc_to_ppms(dataset.received)
         if dataset.finished:
-            dataset.finished = utils.convert_to_xapi_tz(dataset.finished)    
+            dataset.finished = utils.convert_utc_to_ppms(dataset.finished)    
         if dataset.modified:
-            dataset.modified = utils.convert_to_xapi_tz(dataset.modified)
+            dataset.modified = utils.convert_utc_to_ppms(dataset.modified)
     return datasets
