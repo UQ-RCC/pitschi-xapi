@@ -89,8 +89,8 @@ class File(Base):
     # todo: change to enum
     mode = Column(Enum(Mode), primary_key=False, index=False, nullable=False, default=Mode.intransit) 
     status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
-    received =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now()) )
-    modified =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now())  )
+    received =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, server_default=func.timezone('UTC', func.now()))
+    modified =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now()), onupdate=func.timezone('UTC', func.now()))
     finished =  Column(DateTime, primary_key=False, index=False, nullable=True)
     fileid = Column(String, unique=False, primary_key=False, index=False, nullable=False, default="")
     dataset_id = Column(Integer, ForeignKey("dataset.id"), nullable=False)
@@ -111,7 +111,7 @@ class DailyTask(Base):
     systemid = Column(Integer, ForeignKey("system.id"), nullable=True)
     system = relationship("System", back_populates="dailytasks")
     status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
-    start = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now())  )
+    start = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, server_default=func.timezone('UTC', func.now()) )
     finished = Column(DateTime, primary_key=False, index=False, nullable=True)
     
 class UserProject(Base):

@@ -48,8 +48,8 @@ class FileBase(BaseModel):
     size_kb: float
     status: models.Status = models.Status.ongoing
     mode: models.Mode = models.Mode.intransit
-    received: datetime.datetime = datetime.datetime.now(pytz.utc)
-    modified: datetime.datetime = datetime.datetime.now(pytz.utc)
+    received: Optional[datetime.datetime]
+    modified: Optional[datetime.datetime]
     finished: datetime.datetime = None
     fileid: Optional[str] = None
 
@@ -112,7 +112,7 @@ class Booking(BaseModel):
 
 class DailyTaskBase(BaseModel):
     systemid: Optional[int] = None
-    start: datetime.datetime = datetime.datetime.now(pytz.utc)
+    start: Optional[datetime.datetime]
     finished: datetime.datetime = None
     status: models.Status = models.Status.ongoing
 
