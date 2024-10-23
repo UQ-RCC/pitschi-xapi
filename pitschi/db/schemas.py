@@ -71,8 +71,8 @@ class DatasetBase(BaseModel):
     origionalpath: str   # C:\dekstop\folder1\folder2
     networkpath: str     # \\data.qbi.uq.edu.au\CMM4CEED-Q3504\folder1\folder2
     name: str
-    received: datetime.datetime = datetime.datetime.now(pytz.utc)
-    modified: datetime.datetime = datetime.datetime.now(pytz.utc)
+    received: Optional[datetime.datetime]
+    modified: Optional[datetime.datetime]
     finished: datetime.datetime = None
     desc: Optional[str] = None
     status: models.Status = models.Status.ongoing

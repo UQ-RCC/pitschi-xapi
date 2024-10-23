@@ -134,12 +134,15 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
     files = dataset.files
     dataset.files = []
     # handle datetime, convert the datatime to utc
+    
+    logger.debug(f"@create dataset: datasetname={dataset.name} receivedtime={dataset.received} dataset.modified= {dataset.modified}")
     if dataset.received:
         dataset.received = utils.convert_to_utc(dataset.received)
     if dataset.finished:
         dataset.finished = utils.convert_to_utc(dataset.finished)
     if dataset.modified:
         dataset.modified = utils.convert_to_utc(dataset.modified)
+    logger.debug(f"@create dataset utc convert: datasetname={dataset.name} receivedtime={dataset.received} dataset.modified= {dataset.modified}")
     datasetModel = models.Dataset(**dataset.dict())
     db.add(datasetModel)
     db.flush()
@@ -260,6 +263,7 @@ def update_file(db: Session, fileid: int, updatedata: dict):
 
 def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate):
     files = dataset.files
+    logger.debug(f"@update dataset: receivedtime={dataset.received} dataset.modified= {dataset.modified}")
     if dataset.received:
         dataset.received = utils.convert_to_utc(dataset.received)
     if dataset.finished:
