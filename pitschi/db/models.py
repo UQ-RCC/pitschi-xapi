@@ -51,7 +51,7 @@ class Dataset(Base):
     name = Column(String, unique=False, primary_key=False, index=False, nullable=False)
     received =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, server_default=func.timezone('UTC', func.now()))
     modified =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now()), onupdate=func.timezone('UTC', func.now()))
-    finished =  Column(DateTime, primary_key=False, index=False, nullable=True)
+    finished =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=True)
     desc = Column(String, unique=False, primary_key=False, index=False, nullable=True)
     # todo: change to enum
     mode = Column(Enum(Mode), primary_key=False, index=False, nullable=False, default=Mode.intransit) 
@@ -91,7 +91,7 @@ class File(Base):
     status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
     received =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, server_default=func.timezone('UTC', func.now()))
     modified =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, default=func.timezone('UTC', func.now()), onupdate=func.timezone('UTC', func.now()))
-    finished =  Column(DateTime, primary_key=False, index=False, nullable=True)
+    finished =  Column(DateTime(timezone=True), primary_key=False, index=False, nullable=True)
     fileid = Column(String, unique=False, primary_key=False, index=False, nullable=False, default="")
     dataset_id = Column(Integer, ForeignKey("dataset.id"), nullable=False)
     dataset =  relationship("Dataset", back_populates="files")
@@ -112,7 +112,7 @@ class DailyTask(Base):
     system = relationship("System", back_populates="dailytasks")
     status = Column(Enum(Status), primary_key=False, index=False, nullable=False, default=Status.ongoing)
     start = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=False, server_default=func.timezone('UTC', func.now()) )
-    finished = Column(DateTime, primary_key=False, index=False, nullable=True)
+    finished = Column(DateTime(timezone=True), primary_key=False, index=False, nullable=True)
     
 class UserProject(Base):
     __tablename__ = 'userproject'

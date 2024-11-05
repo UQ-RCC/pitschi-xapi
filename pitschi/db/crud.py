@@ -75,13 +75,6 @@ def create_admin_if_not_exist(db: Session):
 
 
 ################### datasets
-""" def get_datasets_to_reset(db: Session):
-    last_month = datetime.now() - timedelta(days=30)
-    return db.query(models.Dataset).\
-            filter(and_(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]),models.Dataset.status == models.Status.failed)).\
-            join(models.Dataset.booking).\
-            filter(models.Booking.bookingdate >=last_month).all() """
-
 def get_datasets_to_reset(db: Session):
     last_month = datetime.now() - timedelta(days=30)
     return (
@@ -134,15 +127,13 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
     files = dataset.files
     dataset.files = []
     # handle datetime, convert the datatime to utc
-    
-    logger.debug(f"@create dataset: datasetname={dataset.name} receivedtime={dataset.received} dataset.modified= {dataset.modified}")
     if dataset.received:
         dataset.received = utils.convert_to_utc(dataset.received)
     if dataset.finished:
         dataset.finished = utils.convert_to_utc(dataset.finished)
     if dataset.modified:
         dataset.modified = utils.convert_to_utc(dataset.modified)
-    logger.debug(f"@create dataset utc convert: datasetname={dataset.name} receivedtime={dataset.received} dataset.modified= {dataset.modified}")
+    
     datasetModel = models.Dataset(**dataset.dict())
     db.add(datasetModel)
     db.flush()
@@ -235,16 +226,16 @@ def update_dataset_space_datasetid(db: Session, datasetid: int, spaceid: str, cl
 def update_dataset_mode_status(db: Session, datasetid: int, mode: models.Mode, status: models.Status):
     update_obj = {"mode": mode, "status": status}
     if status != models.Status.ongoing:
-        update_obj['finished'] = datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+        update_obj['finished'] = datetime.now(pytz.utc)
     db.query(models.Dataset).\
         filter(models.Dataset.id == datasetid).\
-        update({"mode": mode, "status": status})
+        update(update_obj)
     db.commit()
 
 def update_file_mode_status(db: Session, fileid: int, mode: models.Mode, status: models.Status):
     update_obj = {"mode": mode, "status": status}
     if status != models.Status.ongoing:
-        update_obj['finished'] = datetime.now(pytz.timezone(config.get('ppms', 'timezone')))
+        update_obj['finished'] = datetime.now(pytz.utc)
     db.query(models.File).\
         filter(models.File.id == fileid).\
         update(update_obj)
@@ -263,7 +254,7 @@ def update_file(db: Session, fileid: int, updatedata: dict):
 
 def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate):
     files = dataset.files
-    logger.debug(f"@update dataset: receivedtime={dataset.received} dataset.modified= {dataset.modified}")
+    
     if dataset.received:
         dataset.received = utils.convert_to_utc(dataset.received)
     if dataset.finished:
@@ -273,7 +264,7 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
     _dataset_db = get_dataset(db, datasetid)
     _ds_mode_db = _dataset_db.mode
     _ds_status_db = _dataset_db.status
-    logger.debug(f"@update dataset: datasetdb mode={_ds_mode_db} databsetdb_status= {_ds_status_db} dataset info: {str(_dataset_db)}")
+    
     # ignore if _dataset not exists
     if _dataset_db:
         existing_ds_dic = row2dict(_dataset_db, True)
