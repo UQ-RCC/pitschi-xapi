@@ -519,10 +519,14 @@ def get_project_users(db: Session, projectid: int):
             filter(models.UserProject.projectid == projectid).all()
 
 def update_project_users(db: Session, projectid: int, members: list):
+    _dedup_members = list(set(members))
+    if len(_dedup_members) < len(members):
+        _usrs = ','.join(members)
+        logger.warning(f'ignore duplicate project {projectid} members: {_usrs}')
     _all_members = db.query(models.UserProject).\
             filter(models.UserProject.projectid == projectid).all()
     # add new members
-    _new_members = [m for m in members if m not in [u.username for u in _all_members]]
+    _new_members = [m for m in _dedup_members if m not in [u.username for u in _all_members]]
     if len(_new_members) > 0:
         _usrs = ','.join(_new_members)
         logger.debug(f'add new project {projectid} members: {_usrs}')
@@ -535,7 +539,7 @@ def update_project_users(db: Session, projectid: int, members: list):
     _disabled_members = db.query(models.UserProject).\
             filter(~models.UserProject.enabled).\
             filter(models.UserProject.projectid == projectid).\
-            filter(models.UserProject.username.in_(members))
+            filter(models.UserProject.username.in_(_dedup_members))
     if _disabled_members.count() > 0:
         _usrs = ','.join([u.username for u in _disabled_members.all()])
         logger.debug(f'enable disabled project {projectid} members: {_usrs}')
@@ -546,7 +550,7 @@ def update_project_users(db: Session, projectid: int, members: list):
     _non_members = db.query(models.UserProject).\
             filter(models.UserProject.enabled).\
             filter(models.UserProject.projectid == projectid).\
-            filter(~models.UserProject.username.in_(members))
+            filter(~models.UserProject.username.in_(_dedup_members))
     if _non_members.count() > 0:
         _usrs = ','.join([u.username for u in _non_members.all()])
         logger.debug(f'disable enabled project {projectid} non-members: {_usrs}')
