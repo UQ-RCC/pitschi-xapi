@@ -267,3 +267,24 @@ def get_rdm_collection(coreid: int, projectid: int):
             qcollection = response.json(strict=False)[0].get(config.get('ppms', 'q_collection_field'))
         return qcollection
     return ""
+
+def get_rdm_collections(coreid: int = None):
+    logger.debug("@get_rdm_collections: get all rdm collections")
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+    action = config.get('ppms', 'qcollections_action')
+    rdm_key = config.get('ppms', 'q_collection_field')
+    rdms = []
+    if coreid is None:
+        coreids = json.loads(config.get('ppms', 'coreids'))
+    else:
+        coreids = [coreid]
+    for coreid in coreids:
+        payload = f"apikey={config.get('ppms', 'api2_key')}&action={action}&coreid={coreid}&outformat=json"
+        response = requests.request("POST", url, headers=headers, data=payload)
+        if response.ok:
+            if response.status_code == 204:
+                break
+            if len(response.json()) > 0:
+                rdms.extend([{ 'coreid': r['PlateformID'], 'projectid': r['ProjectRef'], 'rdm': r[rdm_key] } for r in response.json()])
+    return rdms

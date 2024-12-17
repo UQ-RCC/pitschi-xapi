@@ -586,7 +586,8 @@ def create_project(db: Session, project: schemas.Project):
 
 def update_project_collection(db: Session, id: int, q_collection: str):
     project = get_project(db, id)
-    if project:
+    if project and (project.collection != q_collection):
+        logger.debug(f'updating project {project.id} collection: {project.collection} -> {q_collection}')
         project.collection = q_collection
         db.flush()
         db.commit()
@@ -636,11 +637,10 @@ def get_collection(db: Session, collection_name: str):
             filter(models.Collection.name == collection_name).first()
 
 def create_collection(db: Session, acollection: schemas.CollectionBase):
-    logger.info(f">>>>>>>create collection: {acollection.name}")
     collection = db.query(models.Collection).\
             filter(models.Collection.name == acollection.name).one_or_none()
     if not collection:
-        logger.info(f">>>>>>>create collection: null <>>> create new one")
+        logger.info(f'create collection: {acollection.name}')
         collection = models.Collection(**acollection.dict())
         db.add(collection)
         db.flush()

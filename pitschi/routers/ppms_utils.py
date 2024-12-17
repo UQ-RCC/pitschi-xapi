@@ -1,8 +1,9 @@
+import json
 import logging
 import pitschi.config as config
 import datetime, pytz
 import pitschi.db as pdb
-from pitschi.ppms import get_ppms_user, get_ppms_user_by_id, get_ppms_users, get_systems, get_projects, get_rdm_collection, get_project_members
+from pitschi.ppms import get_ppms_user, get_ppms_user_by_id, get_ppms_users, get_systems, get_projects, get_rdm_collections, get_project_members
 from pitschi.notifications import send_teams_warning, send_teams_error
 from sqlalchemy.orm import Session
 
@@ -73,6 +74,7 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
     - otherwise just sync the projects in projects_ids
     '''
     users = get_ppms_users()
+    _rdms_by_pid = { r['projectid']: r['rdm'] for r in get_rdm_collections() }
     # convert to dict to allow easy lookup by login
     _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"] } for u in users }
     _users_info_by_id = { u["id"]: { "login": u["login"], "email": u["email"], "name": u["name"] } for u in users }
@@ -105,17 +107,17 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
             )
         _project_in_db = pdb.crud.create_project(db, _projectSchema)
         ###### get more information
-        if not _project_in_db.collection:
-            _q_collection = get_rdm_collection(_project_in_db.coreid, _project_in_db.id)
-        else:
-            _q_collection = _project_in_db.collection
-        if _q_collection and '-' in _q_collection:
-            # create collection and collectioncache
-            pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
-            # create one its, one imb by default
-            pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='its'))
-            pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name='imb', priority=1))
-            if not _project_in_db.collection:        
+        _q_collection = _rdms_by_pid.get(_project_id)
+        if (_q_collection and '-' in _q_collection) or _q_collection == '':
+            if _q_collection == '':
+                _q_collection = None
+            else:
+                # create/update collection
+                pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
+                # create default collectioncaches
+                for cn, cp in json.loads(config.get('rdm', 'cache_defaults')).items():
+                    pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name=cn, priority=cp))
+            if _project_in_db.collection != _q_collection:
                 pdb.crud.update_project_collection(db, _project_in_db.id, _q_collection)
 
         # now with project users
