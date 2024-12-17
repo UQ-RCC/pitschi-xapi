@@ -111,10 +111,9 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
         if (_q_collection and '-' in _q_collection) or _q_collection == '':
             if _q_collection == '':
                 _q_collection = None
-            else:
-                # create/update collection
+            if _q_collection and not pdb.crud.get_collection(db, _q_collection):
+                # create collection and default collection caches
                 pdb.crud.create_collection(db, pdb.schemas.CollectionBase(name=_q_collection))
-                # create default collectioncaches
                 for cn, cp in json.loads(config.get('rdm', 'cache_defaults')).items():
                     pdb.crud.create_collection_cache(db, pdb.schemas.CollectionCacheBase(collection_name=_q_collection, cache_name=cn, priority=cp))
             if _project_in_db.collection != _q_collection:
