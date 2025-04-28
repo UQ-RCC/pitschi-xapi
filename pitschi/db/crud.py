@@ -310,6 +310,36 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
 
         
 ############# ppms
+def get_core(db: Session, coreid: int):
+    return db.query(models.Core).\
+            filter(models.Core.id == coreid).first()
+
+def create_core(db: Session, system: schemas.Core):
+    """
+    Create a PPMS core, or update if needed
+    """
+    _a_core = get_core(db, core.id)
+    if _a_core:
+        core_update = core.dict(exclude_unset=True)
+        for col in [c.name for c in _a_core.__table__.columns]:
+            if col in core_update:
+                if getattr(_a_core, col) == core_update[col]:
+                    core_update.pop(col)
+        if core_update:
+            logger.debug(f'updating core {core.id}: {core_update}')
+            db.query(models.Core).filter(models.Core.id == core.id).update(core_update)
+            db.flush()
+            db.commit()
+            db.refresh(_a_core)
+    else:
+        logger.debug(f'creating core {core.id}')
+        _a_core = models.Core(**core.dict())
+        db.add(_a_core)
+        db.flush()
+        db.commit()
+        db.refresh(_a_core)
+    return _a_core
+
 def get_system(db: Session, systemid: int):
     return db.query(models.System).\
             filter(models.System.id == systemid).first()

@@ -3,7 +3,7 @@ import logging
 import pitschi.config as config
 import datetime, pytz
 import pitschi.db as pdb
-from pitschi.ppms import get_ppms_user, get_ppms_user_by_id, get_ppms_users, get_systems, get_projects, get_rdm_collections, get_project_members
+from pitschi.ppms import get_ppms_user, get_ppms_user_by_id, get_ppms_users, get_cores, get_system_pids, get_systems, get_projects, get_rdm_collections, get_project_members
 from pitschi.notifications import send_teams_warning, send_teams_error
 from sqlalchemy.orm import Session
 
@@ -65,6 +65,19 @@ def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int 
     _db_user = pdb.crud.create_ppms_user(db, _user_schema)
     de_dup_userid(db, _db_user.username, _usr.get('id'), users_info, alert=alert)
     return _db_user
+
+
+def sync_cores(db: Session):
+    cores = get_cores()
+    for core in cores:
+        _id = core.get('Core ID')
+        pdb.crud.create_core(db, pdb.schemas.Core(
+            id = _id,
+            institution = core.get('Institution'),
+            shortname = core.get('Facility Short Name'),
+            longname = core.get('Facility Long Name'),
+            rorid = core.get('ROR ID'))
+        )
 
 
 def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger = logger, alert: bool = False):
@@ -159,14 +172,18 @@ def sync_ppms_projects(db: Session, alogger: logging.Logger = logger):
             return
         else:
             pdb.crud.set_stat(db, name='syncing_projects', value='True')
-    alogger.debug("--> sync PPMS info: systems, projects, users")
+    alogger.debug("--> sync PPMS info: cores, systems, projects, users")
+    sync_cores(db)
+    pids = {p['System ID']: p['PID'] for p in get_system_pids() if p.get('PID')}
     systems = get_systems()
     for system in systems:
+        _id = system.get('systemid')
         pdb.crud.create_system(db, pdb.schemas.System(
-            id = system.get('systemid'),
+            id = _id,
             coreid = system.get('coreid'),
             type = system.get('systemtype'),
-            name = system.get('systemname'))
+            name = system.get('systemname')),
+            pid = pids.get(_id, '')
         )
     sync_projects(db, alogger=alogger, alert=True)
     pdb.crud.set_stat(db, name='syncing_projects', value='False')

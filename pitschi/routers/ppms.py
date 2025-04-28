@@ -64,9 +64,6 @@ async def get_bookings_in_one_day(  bookingid: int, \
         )
     logger.debug(f"Querying booking {bookingid}")
     return pdb.crud.get_booking(db, bookingid)
-    
-
-
 
 @router.get("/projects")
 async def get_projects(credentials: HTTPBasicCredentials = Depends(security),\
@@ -81,3 +78,16 @@ async def get_projects(credentials: HTTPBasicCredentials = Depends(security),\
     logger.debug(f"Querying all projects and its information")
     return pdb.crud.get_projects_full(db)
 
+@router.get("/systems/{systemid}")
+async def get_systems( systemid: int,
+                       credentials: HTTPBasicCredentials = Depends(security),
+                       db: Session = Depends(pdb.get_db)):
+    user = pdb.crud.get_user(db, credentials.username, credentials.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    logger.debug(f"Querying systemid {systemid}")
+    return pdb.crud.get_system(db, systemid)

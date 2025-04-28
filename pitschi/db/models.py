@@ -96,12 +96,21 @@ class File(Base):
     dataset_id = Column(Integer, ForeignKey("dataset.id"), nullable=False)
     dataset =  relationship("Dataset", back_populates="files")
 
+class Core(Base):
+    __tablename__ = 'core'
+    id = Column(Integer, primary_key=True, index=True)
+    institution = Column(String, primary_key=False, index=False, nullable=False)
+    shortname = Column(String, primary_key=False, index=False, nullable=False)
+    longname = Column(String, primary_key=False, index=False, nullable=False)
+    rorid = Column(String, primary_key=False, index=False, nullable=False)
+
 class System(Base):
     __tablename__ = 'system'
     id = Column(Integer, primary_key=True, index=True)
-    coreid = Column(Integer, primary_key=False, index=False, nullable=False)
+    coreid = Column(Integer, ForeignKey("core.id"), nullable=False)
     type = Column(String, primary_key=False, index=False, nullable=False)
     name = Column(String, primary_key=False, index=False, nullable=False)
+    pid = Column(String, primary_key=False, index=False, nullable=False)
     bookings = relationship("Booking", back_populates="system")
     dailytasks = relationship("DailyTask", back_populates="system")
 

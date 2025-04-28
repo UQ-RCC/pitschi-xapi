@@ -140,6 +140,23 @@ def get_daily_training(date: datetime.date):
     return sessions
 
 
+def get_system_pids():
+    logger.debug(f'get all system pids')
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report2168"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code != 204:
+            pids = response.json(strict=False)
+            if type(pids) == list and len(pids) > 0:
+                return pids
+    logger.warning(f'response status_code={response.status_code}, text="{response.text}"')
+    return []
+
+
 def get_systems():
     logger.debug("get all systems")
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
@@ -149,9 +166,7 @@ def get_systems():
     }
     response = requests.request("POST", url, headers=headers, data=payload)
     if response.ok:
-        if response.status_code == 204:
-            return []
-        else:
+        if response.status_code != 204:
             # format is in csv
             _systems_text = response.text
             _csv_reader = csv.reader(_systems_text.split('\n'), delimiter=',')
@@ -165,7 +180,8 @@ def get_systems():
                     _systemname = row[3]
                     systems.append({'coreid': _coreid, 'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname})
             return systems
-    return {}
+    logger.warning(f'response status_code={response.status_code}, text="{response.text}"')
+    return []
 
 
 def get_system_rights(systemid: int):

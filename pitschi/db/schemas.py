@@ -121,11 +121,21 @@ class DailyTask(DailyTaskBase):
     class Config:
         orm_mode = True
 
+class Core(BaseModel):
+    id: int
+    institution: str
+    shortname: str
+    longname: str
+    rorid: str
+    class Config:
+        orm_mode = True
+
 class System(BaseModel):
     id: int
     coreid: int
     type: str
     name: str
+    pid: str
     bookings: List[Booking] = []
     dailytasks: List[DailyTask] = []
     class Config:

@@ -101,10 +101,12 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                         logger.error(f"@dataset {dataset} does not have any booking.: {dataset.bookingid}")
                         return (False, ["Fail to find dataset booking"])
                     _ds_metadata = {
-                        "system": dataset.origionalmachine,
-                        "author": _dataset_booking.username,
-                        "projectid": _dataset_booking.projectid,
-                        "bookingid": _dataset_booking.id
+                        'system': dataset.origionalmachine,
+                        'author': _dataset_booking.username,
+                        'projectid': _dataset_booking.projectid,
+                        'bookingid': _dataset_booking.id,
+                        'PID': pdb.crud.get_system_pid(db, _dataset_booking.systemid),
+                        'ROR': pdb.crud.get_system_ror(db, _dataset_booking.systemid)
                     }
                     clowderful.upload_dataset_metadata(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_metadata)
                     ### add tags
@@ -121,7 +123,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
 
     ######## not found #########
     if not found:
-        return (False, ["Cannot find Clouder space and dataset"])
+        return (False, ["Cannot find Clowder space and dataset"])
 
     # all files items
     logger.debug("Space and dataset found. Now ingesting files")
@@ -280,7 +282,7 @@ def send_email(db, datasetinfo, result, messages):
             <head></head>
             <body>
                 <p>Dear admins<br /></p>
-                <p>The following dataset was failed to ingest:</p>
+                <p>The following dataset failed to ingest:</p>
                 <ul>
                     <li><b>Machine</b> {datasetinfo.origionalmachine}</li>
                     <li><b>Location</b> {datasetinfo.origionalpath}</li>
