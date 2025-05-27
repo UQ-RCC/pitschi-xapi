@@ -4,7 +4,7 @@ import datetime, pytz
 from fastapi import APIRouter, Depends, status
 from fastapi_utils.tasks import repeat_every
 import pitschi.db as pdb
-from pitschi.ppms import get_daily_bookings, get_daily_training, get_booking_details
+from pitschi.ppms import get_system_pids, get_daily_bookings, get_daily_training, get_booking_details
 from pitschi.routers import ppms_utils
 from sqlalchemy.orm import Session
 
@@ -31,6 +31,7 @@ def sync_ppms_bookings() -> None:
         logger.debug('query ppms bookings of today')
         _today_tz = datetime.datetime.now(pytz.timezone(config.get('ppms', 'timezone'))).date()
         _bookings = get_daily_bookings(_today_tz)
+        pids = {p['System ID']: p['PID'] for p in get_system_pids() if p.get('PID')}
         logger.debug(f'bookings: {len(_bookings)}')
         # training sessions can have multiple records -- use the record with
         # 'Training organised by' == 'User full Name' to set booking project/user
@@ -46,13 +47,15 @@ def sync_ppms_bookings() -> None:
                 continue
             _booking_details = _booking_details_list[0]
             _booking['systemId'] = None
-            if _booking_details.get('systemId'):
+            _id = _booking_details.get('systemId')
+            if _id:
                 try:
                     _system = pdb.crud.create_system(db, pdb.schemas.System(
-                        id = _booking_details.get('systemId'),
+                        id = _id,
                         coreid = _booking.get('coreid'),
                         type = _booking_details.get('systemType'),
-                        name = _booking_details.get('systemName'))
+                        name = _booking_details.get('systemName'),
+                        pid = pids.get(_id, ''))
                     )
                     _booking['systemId'] = _system.id
                 except:

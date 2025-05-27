@@ -8,7 +8,7 @@ import datetime
 import pitschi.config as config
 import pitschi.utils as utils
 import pitschi.clowder_rest as clowderful
-import os, json
+import os
 
 router = APIRouter()
 logger = logging.getLogger('pitschixapi')

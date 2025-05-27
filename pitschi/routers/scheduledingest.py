@@ -101,7 +101,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                         logger.error(f"@dataset {dataset} does not have any booking.: {dataset.bookingid}")
                         return (False, ["Fail to find dataset booking"])
                     _ds_metadata = {
-                        'system': dataset.origionalmachine,
+                        'system': dataset.originalmachine,
                         'author': _dataset_booking.username,
                         'projectid': _dataset_booking.projectid,
                         'bookingid': _dataset_booking.id,
@@ -110,7 +110,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                     }
                     clowderful.upload_dataset_metadata(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_metadata)
                     ### add tags
-                    _ds_tags = [ dataset.origionalmachine, _dataset_booking.username, str(_dataset_booking.projectid) ]
+                    _ds_tags = [ dataset.originalmachine, _dataset_booking.username, str(_dataset_booking.projectid) ]
                     clowderful.add_dataset_tags(_clowder_key, _clowder_api_url, _ds_info.get('id'), _ds_tags)
             else:
                 found = False
@@ -284,8 +284,8 @@ def send_email(db, datasetinfo, result, messages):
                 <p>Dear admins<br /></p>
                 <p>The following dataset failed to ingest:</p>
                 <ul>
-                    <li><b>Machine</b> {datasetinfo.origionalmachine}</li>
-                    <li><b>Location</b> {datasetinfo.origionalpath}</li>
+                    <li><b>Machine</b> {datasetinfo.originalmachine}</li>
+                    <li><b>Location</b> {datasetinfo.originalpath}</li>
                     <li><b>Booking id:</b> {datasetinfo.booking.id}</li>
                     <li><b>system id:</b> {datasetinfo.booking.systemid}</li>
                     <li><b>username:</b> {datasetinfo.booking.username}</li>

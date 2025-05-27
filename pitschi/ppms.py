@@ -140,6 +140,24 @@ def get_daily_training(date: datetime.date):
     return sessions
 
 
+def get_cores():
+    coreids = json.loads(config.get('ppms', 'coreids'))
+    logger.debug(f'get cores for core ids: {",".join(str(c) for c in coreids)}')
+    url = f"{config.get('ppms', 'ppms_url')}API2/"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report2169"
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    if response.ok:
+        if response.status_code != 204:
+            cores = response.json(strict=False)
+            if type(cores) == list and len(cores) > 0:
+                return [c for c in cores if c.get('Core ID') in coreids]
+    logger.warning(f'response status_code={response.status_code}, text="{response.text}"')
+    return []
+
+
 def get_system_pids():
     logger.debug(f'get all system pids')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
@@ -158,7 +176,8 @@ def get_system_pids():
 
 
 def get_systems():
-    logger.debug("get all systems")
+    coreids = json.loads(config.get('ppms', 'coreids'))
+    logger.debug(f'get systems for core ids: {",".join(str(c) for c in coreids)}')
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getsystems"
     headers = {
@@ -175,10 +194,11 @@ def get_systems():
             for row in _csv_reader:
                 if(len(row) > 3):
                     _coreid = int(row[0])
-                    _systemid = int(row[1])
-                    _systemtype = row[2]
-                    _systemname = row[3]
-                    systems.append({'coreid': _coreid, 'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname})
+                    if _coreid in coreids:
+                        _systemid = int(row[1])
+                        _systemtype = row[2]
+                        _systemname = row[3]
+                        systems.append({'coreid': _coreid, 'systemid': _systemid, 'systemtype': _systemtype, 'systemname': _systemname})
             return systems
     logger.warning(f'response status_code={response.status_code}, text="{response.text}"')
     return []
@@ -205,7 +225,8 @@ def get_system_rights(systemid: int):
 
 
 def get_projects():
-    logger.debug("get all projects")
+    coreids = json.loads(config.get('ppms', 'coreids'))
+    logger.debug(f'get projects for core ids: {",".join(str(c) for c in coreids)}')
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&active=true&format=json"
     # payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&format=json"
@@ -217,7 +238,7 @@ def get_projects():
         if response.status_code == 204:
             return []
         else:
-            return response.json(strict=False)
+            return [p for p in response.json(strict=False) if p.get('CoreFacilityRef') in coreids]
     else:
         return []
 
@@ -285,7 +306,6 @@ def get_rdm_collection(coreid: int, projectid: int):
     return ""
 
 def get_rdm_collections(coreid: int = None):
-    logger.debug("@get_rdm_collections: get all rdm collections")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
     action = config.get('ppms', 'qcollections_action')
@@ -295,6 +315,7 @@ def get_rdm_collections(coreid: int = None):
         coreids = json.loads(config.get('ppms', 'coreids'))
     else:
         coreids = [coreid]
+    logger.debug(f'get rdm collections for core ids: {",".join(str(c) for c in coreids)}')
     for coreid in coreids:
         payload = f"apikey={config.get('ppms', 'api2_key')}&action={action}&coreid={coreid}&outformat=json"
         response = requests.request("POST", url, headers=headers, data=payload)

@@ -93,8 +93,8 @@ def get_datasets(db: Session, username: str):
 
 def get_datasets_from_original(db: Session, username: str, origmachine: str, origpath: str):
     return db.query(models.Dataset).\
-            filter(models.Dataset.origionalmachine == origmachine).\
-            filter(models.Dataset.origionalpath == origpath).\
+            filter(models.Dataset.originalmachine == origmachine).\
+            filter(models.Dataset.originalpath == origpath).\
         join(models.Dataset.booking).\
             filter(or_(models.Booking.username == username, models.Booking.assistant == username)).all()
 
@@ -102,7 +102,7 @@ def get_datasets_from_one_machine(db: Session, username: str, origmachine: str, 
     return db.query(models.Dataset).\
             filter(and_(func.date(models.Dataset.modified) >= date),\
                     (func.date(models.Dataset.modified) <= date )).\
-            filter(models.Dataset.origionalmachine == origmachine).\
+            filter(models.Dataset.originalmachine == origmachine).\
         join(models.Dataset.booking).\
             filter(models.Booking.username == username).all()
 
@@ -314,7 +314,7 @@ def get_core(db: Session, coreid: int):
     return db.query(models.Core).\
             filter(models.Core.id == coreid).first()
 
-def create_core(db: Session, system: schemas.Core):
+def create_core(db: Session, core: schemas.Core):
     """
     Create a PPMS core, or update if needed
     """
@@ -343,6 +343,13 @@ def create_core(db: Session, system: schemas.Core):
 def get_system(db: Session, systemid: int):
     return db.query(models.System).\
             filter(models.System.id == systemid).first()
+
+def get_system_pid(db: Session, systemid: int):
+    return db.query(models.System).\
+            filter(models.System.id == systemid).first().pid
+
+def get_system_ror(db: Session, systemid: int):
+    return get_core(db, get_system(db, systemid).coreid).rorid
 
 def get_system_byname(db: Session, systemname: str):
     return db.query(models.System).\

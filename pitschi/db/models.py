@@ -44,8 +44,8 @@ class PUser(Base):
 class Dataset(Base):
     __tablename__ = 'dataset'
     id = Column(Integer, primary_key=True, index=True)
-    origionalmachine = Column(String, unique=False, primary_key=False, index=False, nullable=False)
-    origionalpath = Column(String, unique=False, primary_key=False, index=False, nullable=False)
+    originalmachine = Column(String, unique=False, primary_key=False, index=False, nullable=False)
+    originalpath = Column(String, unique=False, primary_key=False, index=False, nullable=False)
     networkpath = Column(String, unique=False, primary_key=False, index=False, nullable=False)
     relpathfromrootcollection = Column(String, unique=False, primary_key=False, index=False, nullable=False)
     name = Column(String, unique=False, primary_key=False, index=False, nullable=False)

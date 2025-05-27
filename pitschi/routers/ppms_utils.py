@@ -70,9 +70,8 @@ def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int 
 def sync_cores(db: Session):
     cores = get_cores()
     for core in cores:
-        _id = core.get('Core ID')
         pdb.crud.create_core(db, pdb.schemas.Core(
-            id = _id,
+            id = core.get('Core ID'),
             institution = core.get('Institution'),
             shortname = core.get('Facility Short Name'),
             longname = core.get('Facility Long Name'),
@@ -182,8 +181,8 @@ def sync_ppms_projects(db: Session, alogger: logging.Logger = logger):
             id = _id,
             coreid = system.get('coreid'),
             type = system.get('systemtype'),
-            name = system.get('systemname')),
-            pid = pids.get(_id, '')
+            name = system.get('systemname'),
+            pid = pids.get(_id, ''))
         )
     sync_projects(db, alogger=alogger, alert=True)
     pdb.crud.set_stat(db, name='syncing_projects', value='False')

@@ -67,8 +67,8 @@ class File(FileBase):
 #################################
 class DatasetBase(BaseModel):
     relpathfromrootcollection: str # /folder1/folder2 # get q collectio nfrom project
-    origionalmachine: str 
-    origionalpath: str   # C:\dekstop\folder1\folder2
+    originalmachine: str
+    originalpath: str   # C:\dekstop\folder1\folder2
     networkpath: str     # \\data.qbi.uq.edu.au\CMM4CEED-Q3504\folder1\folder2
     name: str
     received: Optional[datetime.datetime]

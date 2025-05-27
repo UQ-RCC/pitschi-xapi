@@ -90,4 +90,8 @@ async def get_systems( systemid: int,
             headers={"WWW-Authenticate": "Basic"},
         )
     logger.debug(f"Querying systemid {systemid}")
-    return pdb.crud.get_system(db, systemid)
+    system = pdb.crud.get_system(db, systemid)
+    if not system:
+        return {}
+    ror = pdb.crud.get_system_ror(db, systemid)
+    return { 'id': system.id, 'coreid': system.coreid, 'type': system.type, 'name': system.name, 'pid': system.pid, 'ror': ror }
