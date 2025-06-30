@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import clowder, ppms, user, scheduledingest, credentials
-from .routers import sync_ppms_bookings, sync_ppms_projects, notification, mail, dailytask
+from .routers import sync_ppms_bookings, sync_ppms_projects, mail, dailytask
 
 from .routers.dashboard import projects, collections, cache, admin, dataset
 
@@ -49,13 +49,6 @@ pitschixapi.include_router(
 pitschixapi.include_router(
     mail.router,
     tags=["mail"],
-    responses={404: {"description": "Not found"}},
-)
-
-# notification
-pitschixapi.include_router(
-    notification.router, 
-    tags=["notification"], 
     responses={404: {"description": "Not found"}},
 )
 

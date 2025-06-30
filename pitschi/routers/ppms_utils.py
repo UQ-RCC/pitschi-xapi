@@ -1,10 +1,9 @@
 import json
 import logging
 import pitschi.config as config
-import datetime, pytz
 import pitschi.db as pdb
 from pitschi.ppms import get_ppms_user, get_ppms_user_by_id, get_ppms_users, get_cores, get_system_pids, get_systems, get_projects, get_rdm_collections, get_project_members
-from pitschi.notifications import send_teams_warning, send_teams_error
+import pitschi.mail as mail
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger('pitschixapi')
@@ -32,12 +31,14 @@ def de_dup_userid(db: Session, login: str, userid: int, users_info: dict, alert:
                 logger.warning(msg)
                 pdb.crud.update_ppms_user_id(db, _fix_user.username, _usr.get('id'))
                 if (alert):
-                    send_teams_warning('RIMS sync duplicate userid', msg[:1].upper() + msg[1:] + ', was username changed in RIMS?')
+                    contents = msg[:1].upper() + msg[1:] + ', was username changed in RIMS?'
+                    mail.send_mail(config.get('email', 'address'), '[WARNING] RIMS sync duplicate userid', contents)
             else:
                 msg = f'User {_fix_user.username} has duplicate id {userid}'
                 logger.error(msg)
                 if (alert):
-                    send_teams_error('RIMS sync duplicate userid', msg + ', was username deleted in RIMS?')
+                    contents = msg + ', was username deleted in RIMS?'
+                    mail.send_mail(config.get('email', 'address'), '[ERROR] RIMS sync duplicate userid', contents)
 
 
 def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int = None, users_info: dict = None, alert: bool = False):
@@ -66,6 +67,31 @@ def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int 
     de_dup_userid(db, _db_user.username, _usr.get('id'), users_info, alert=alert)
     return _db_user
 
+
+def notify_failed_datasets(db: Session, alert: bool = False):
+    days = int(config.get('ppms', 'project_sync_day'))
+    results = pdb.crud.get_datasets_to_reset(db, since_days=days)
+    all_fails = [{'name': rs.Dataset.name, 'booking': rs.Dataset.bookingid, 'machine': rs.Dataset.originalmachine, 'mode': rs.Dataset.mode} for rs in results]
+    if len(all_fails) > 0:
+        import_fails = [ds for ds in all_fails if ds['mode'] == pdb.models.Mode.imported]
+        ingest_fails = [ds for ds in all_fails if ds['mode'] == pdb.models.Mode.ingested]
+        msg = f'{len(all_fails)} datasets failed in past {days} day/s: {len(import_fails)} imports, {len(ingest_fails)} ingests'
+        logger.warning(msg)
+        if (alert):
+            contents = '<p>' + msg + '</p>'
+            contents += '<p>imports failed</p>'
+            contents += '<ul>'
+            for ds in import_fails:
+                contents += f'<li>{ds["name"]}: booking {ds["booking"]}, on {ds["machine"]}</li>'
+            contents += '</ul>'
+            contents += '<p>ingests failed</p>'
+            contents += '<ul>'
+            for ds in ingest_fails:
+                contents += f'<li>{ds["name"]}: booking {ds["booking"]}, on {ds["machine"]}</li>'
+            contents += '</ul>'
+            mail.send_mail(config.get('email', 'address'), '[WARNING] Dataset import/ingest fails', contents)
+    else:
+        logger.info(f'No datasets failed in past {days} day/s')
 
 def sync_cores(db: Session):
     cores = get_cores()
@@ -171,6 +197,8 @@ def sync_ppms_projects(db: Session, alogger: logging.Logger = logger):
             return
         else:
             pdb.crud.set_stat(db, name='syncing_projects', value='True')
+    alogger.debug("--> sync PPMS info: checking for import/ingest fails")
+    notify_failed_datasets(db, alert=True)
     alogger.debug("--> sync PPMS info: cores, systems, projects, users")
     sync_cores(db)
     pids = {p['System ID']: p['PID'] for p in get_system_pids() if p.get('PID')}

@@ -345,7 +345,6 @@ def ingest() -> None:
                     # send an email
                     _dataset_info = pdb.crud.summarize_dataset_info(db, _dataset.id)
                     if _dataset_info:
-                        logger.debug(f"Datasetinto {_dataset_info}")
                         send_email(db, _dataset_info, result, messages)
                     if result:
                         # success

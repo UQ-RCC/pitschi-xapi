@@ -1,4 +1,4 @@
-FROM python:3.10-alpine3.16 as builder
+FROM python:3.10-alpine3.16
 WORKDIR /app
 
 RUN apk update

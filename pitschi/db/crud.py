@@ -75,28 +75,29 @@ def create_admin_if_not_exist(db: Session):
 
 
 ################### datasets
-def get_datasets_to_reset(db: Session):
-    last_month = datetime.now() - timedelta(days=30)
+def get_datasets_to_reset(db: Session, since_days: int = 30):
+    since = datetime.now() - timedelta(days=since_days)
     return (
         db.query(models.Dataset, models.Booking).\
         join(models.Dataset.booking ).\
         filter(models.Dataset.mode.in_([models.Mode.imported, models.Mode.ingested]), 
             models.Dataset.status == models.Status.failed,
-            models.Booking.bookingdate >= last_month).all()
+            models.Booking.bookingdate >= since).all()
     )
 
 
 def get_datasets(db: Session, username: str):
     return db.query(models.Dataset).\
             join(models.Dataset.booking).\
-            filter(models.Booking.username == username).all()
+            filter(func.lower(models.Booking.username) == username.lower()).all()
 
 def get_datasets_from_original(db: Session, username: str, origmachine: str, origpath: str):
+    _usr = username.lower()
     return db.query(models.Dataset).\
             filter(models.Dataset.originalmachine == origmachine).\
             filter(models.Dataset.originalpath == origpath).\
         join(models.Dataset.booking).\
-            filter(or_(models.Booking.username == username, models.Booking.assistant == username)).all()
+            filter(or_(func.lower(models.Booking.username) == _usr, func.lower(models.Booking.assistant) == _usr)).all()
 
 def get_datasets_from_one_machine(db: Session, username: str, origmachine: str, date: datetime.date):
     return db.query(models.Dataset).\
@@ -104,7 +105,7 @@ def get_datasets_from_one_machine(db: Session, username: str, origmachine: str, 
                     (func.date(models.Dataset.modified) <= date )).\
             filter(models.Dataset.originalmachine == origmachine).\
         join(models.Dataset.booking).\
-            filter(models.Booking.username == username).all()
+            filter(func.lower(models.Booking.username) == username.lower()).all()
 
 def get_dataset(db: Session, datasetid: int):
     return db.query(models.Dataset).\
@@ -384,7 +385,7 @@ def create_system(db: Session, system: schemas.System):
 
 def get_ppms_user(db: Session, username: str):
     return db.query(models.User).\
-            filter(models.User.username == username).first()
+            filter(func.lower(models.User.username) == username.lower()).first()
 
 def get_ppms_user_by_uid(db: Session, uid: int):
     return db.query(models.User).\
@@ -407,7 +408,7 @@ def create_ppms_user(db: Session, user: schemas.User):
                     user_update.pop(col)
         if user_update:
             logger.debug(f'updating user {user.username}: {user_update}')
-            db.query(models.User).filter(models.User.username == user.username).update(user_update)
+            db.query(models.User).filter(func.lower(models.User.username) == user.username.lower()).update(user_update, synchronize_session='fetch')
             db.flush()
             db.commit()
             db.refresh(_a_user)
@@ -452,7 +453,7 @@ def get_bookings(db: Session, bookingdate: datetime.date):
             filter(models.Booking.cancelled == False).all()
 
 def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime.date):
-    # probarbly there is better way
+    # there may be a better way
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
                 filter(models.Booking.username != None). \
@@ -476,13 +477,14 @@ def get_bookings_filter_system(db: Session, systemid: int, bookingdate: datetime
 
 
 def get_bookings_filter_system_and_user(db: Session, systemid: int, bookingdate: datetime.date, username: str):
+    _usr = username.lower()
     bookings =  db.query(models.Booking).\
                 filter(models.Booking.systemid == systemid). \
-                filter(or_(models.Booking.username == username, models.Booking.assistant == username)). \
+                filter(or_(func.lower(models.Booking.username) == _usr, func.lower(models.Booking.assistant) == _usr)). \
                 filter(models.Booking.bookingdate == bookingdate). \
                 filter(models.Booking.cancelled == False).\
                 join(models.UserProject).\
-                filter(models.UserProject.username == models.Booking.username).\
+                filter(func.lower(models.UserProject.username) == func.lower(models.Booking.username)).\
                 filter(models.UserProject.projectid == models.Booking.projectid).\
                 filter(models.UserProject.enabled).all()
     for booking in bookings:
@@ -516,7 +518,7 @@ def create_booking(db: Session, booking_session: schemas.Booking):
     session = parse_obj_as(schemas.Booking, booking_session)
     if session.username and session.projectid:
         userproject = db.query(models.UserProject). \
-                        filter(models.UserProject.username == session.username). \
+                        filter(func.lower(models.UserProject.username) == session.username.lower()). \
                         filter(models.UserProject.projectid == session.projectid).first()
         if not userproject:
             # need to add a disabled project member for booking foreign key constraint with userproject
@@ -556,14 +558,14 @@ def get_project_users(db: Session, projectid: int):
             filter(models.UserProject.projectid == projectid).all()
 
 def update_project_users(db: Session, projectid: int, members: list):
-    _dedup_members = list(set(members))
+    _dedup_members = list(set([m.lower() for m in members]))
     if len(_dedup_members) < len(members):
         _usrs = ','.join(members)
         logger.warning(f'ignore duplicate project {projectid} members: {_usrs}')
     _all_members = db.query(models.UserProject).\
             filter(models.UserProject.projectid == projectid).all()
     # add new members
-    _new_members = [m for m in _dedup_members if m not in [u.username for u in _all_members]]
+    _new_members = [m for m in _dedup_members if m not in [u.username.lower() for u in _all_members]]
     if len(_new_members) > 0:
         _usrs = ','.join(_new_members)
         logger.debug(f'add new project {projectid} members: {_usrs}')
@@ -576,7 +578,7 @@ def update_project_users(db: Session, projectid: int, members: list):
     _disabled_members = db.query(models.UserProject).\
             filter(~models.UserProject.enabled).\
             filter(models.UserProject.projectid == projectid).\
-            filter(models.UserProject.username.in_(_dedup_members))
+            filter(func.lower(models.UserProject.username).in_(_dedup_members))
     if _disabled_members.count() > 0:
         _usrs = ','.join([u.username for u in _disabled_members.all()])
         logger.debug(f'enable disabled project {projectid} members: {_usrs}')
@@ -587,7 +589,7 @@ def update_project_users(db: Session, projectid: int, members: list):
     _non_members = db.query(models.UserProject).\
             filter(models.UserProject.enabled).\
             filter(models.UserProject.projectid == projectid).\
-            filter(~models.UserProject.username.in_(_dedup_members))
+            filter(~func.lower(models.UserProject.username).in_(_dedup_members))
     if _non_members.count() > 0:
         _usrs = ','.join([u.username for u in _non_members.all()])
         logger.debug(f'disable enabled project {projectid} non-members: {_usrs}')
