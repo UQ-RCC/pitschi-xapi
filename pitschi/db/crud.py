@@ -570,7 +570,10 @@ def update_project_users(db: Session, projectid: int, members: list):
         _usrs = ','.join(_new_members)
         logger.debug(f'add new project {projectid} members: {_usrs}')
         for _new_member in _new_members:
-            userprojectobj = models.UserProject(username=_new_member, projectid=projectid)
+            # get db username so we don't break foreign key constraint with wrong case
+            _username = get_ppms_user(db, _new_member).username
+            # add to user's list of projects
+            userprojectobj = models.UserProject(username=_username, projectid=projectid)
             db.add(userprojectobj)
         db.flush()
         db.commit()
