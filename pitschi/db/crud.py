@@ -384,8 +384,9 @@ def create_system(db: Session, system: schemas.System):
     return _a_system
 
 def get_ppms_user(db: Session, username: str):
+    _user = username.lower() if username else username
     return db.query(models.User).\
-            filter(func.lower(models.User.username) == username.lower()).first()
+            filter(func.lower(models.User.username) == _user).first()
 
 def get_ppms_user_by_uid(db: Session, uid: int):
     return db.query(models.User).\
