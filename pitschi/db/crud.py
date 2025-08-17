@@ -665,11 +665,23 @@ def summarize_dataset_info(db: Session, datasetid: int):
     dataset = get_dataset(db, datasetid)
     if dataset:
         booking = get_booking(db, dataset.bookingid)
-        dataset.booking = booking
         if booking:
+            dataset.booking = booking
             dataset.user = get_ppms_user(db, booking.username)
+            if not dataset.user:
+                logger.error(f'booking user not found: dataset id {datasetid}, booking id {booking.id}')
+                return None
             dataset.system = get_system(db, booking.systemid)
+            if not dataset.system:
+                logger.error(f'booking system not found: dataset id {datasetid}, booking id {booking.id}')
+                return None
             dataset.project = get_project(db, booking.projectid)
+            if not dataset.project:
+                logger.error(f'booking project found: dataset id {datasetid}, booking id {booking.id}')
+                return None
+        else:
+            logger.error(f'booking not found: dataset id {datasetid}')
+            return None
     return dataset
 
 
