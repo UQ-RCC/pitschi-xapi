@@ -1,5 +1,6 @@
 import logging
 import pitschi.config as config
+import pitschi.utils as utils
 import datetime, pytz
 from fastapi import APIRouter, Depends, status
 from fastapi_utils.tasks import repeat_every
@@ -13,11 +14,7 @@ logger = logging.getLogger('pitschixapi')
 
 #from pitschi.db.database import SessionLocal
 from fastapi_utils.session import FastAPISessionMaker
-database_uri = (f"{config.get('database', 'type')}://"
-                f"{config.get('database', 'username')}:"
-                f"{config.get('database', 'password')}@"
-                f"{config.get('database', 'host')}/"
-                f"{config.get('database', 'name')}")
+database_uri = utils.get_db_connection()
 sessionmaker = FastAPISessionMaker(database_uri)
 
 

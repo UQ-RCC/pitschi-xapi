@@ -2,16 +2,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from fastapi_utils.session import FastAPISessionMaker
-import pitschi.config as config
+import pitschi.utils as utils
 
 from functools import lru_cache
 
-
-SQLALCHEMY_DATABASE_URL = (f"{config.get('database', 'type')}://"
-                           f"{config.get('database', 'username')}:"
-                           f"{config.get('database', 'password')}@"
-                           f"{config.get('database', 'host')}/"
-                           f"{config.get('database', 'name')}")
+SQLALCHEMY_DATABASE_URL = utils.get_db_connection()
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={}

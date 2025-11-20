@@ -4,6 +4,13 @@ import os
 from chardet import detect
 from random import randrange
 
+def get_db_connection():
+    return (f"{config.get('database', 'type')}://"
+        f"{config.get('database', 'username')}:"
+        f"{config.get('database', 'password')}@"
+        f"{config.get('database', 'host')}/"
+        f"{config.get('database', 'name')}")
+
 def localize_time(datetimeobject):
     if datetimeobject.tzinfo:
         return datetimeobject

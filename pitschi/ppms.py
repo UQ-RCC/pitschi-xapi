@@ -228,19 +228,33 @@ def get_projects():
     coreids = json.loads(config.get('ppms', 'coreids'))
     logger.debug(f'get projects for core ids: {",".join(str(c) for c in coreids)}')
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
-    payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&active=true&format=json"
+    # use {{coreid}} so it can be set with format call in loop
+    payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&coreid={{coreid}}&active=true&format=json"
     # payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getprojects&format=json"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
-    if response.ok:
-        if response.status_code == 204:
-            return []
+    # get projects for required coreids, keep track of any shared projects with CoreFacilityRef = 0
+    # only add shared projects with coreid on first occurrence
+    projects, sharedProjs = [], []
+    for coreid in coreids:
+        response = requests.request("POST", url, headers=headers, data=payload.format(coreid=coreid))
+        if response.ok:
+            if response.status_code == 204:
+                return []
+            else:
+                for project in response.json(strict=False):
+                    if project.get('CoreFacilityRef') == 0:
+                        if project.get('ProjectRef') in sharedProjs:
+                            # already have this project on another coreid
+                            continue
+                        else:
+                            project['CoreFacilityRef'] = coreid
+                            sharedProjs.append(project.get('ProjectRef'))
+                    projects.append(project)
         else:
-            return [p for p in response.json(strict=False) if p.get('CoreFacilityRef') in coreids]
-    else:
-        return []
+            return []
+    return projects
 
 
 def get_project_user(projectid: int):
