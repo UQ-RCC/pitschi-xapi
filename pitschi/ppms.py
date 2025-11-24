@@ -245,12 +245,15 @@ def get_projects():
             else:
                 for project in response.json(strict=False):
                     if project.get('CoreFacilityRef') == 0:
-                        if project.get('ProjectRef') in sharedProjs:
+                        projId = project.get('ProjectRef')
+                        logger.info(f'shared project: {projId}')
+                        if projId in sharedProjs:
                             # already have this project on another coreid
                             continue
                         else:
+                            logger.info(f'shared project: {projId} - using core id: {coreid}')
                             project['CoreFacilityRef'] = coreid
-                            sharedProjs.append(project.get('ProjectRef'))
+                            sharedProjs.append(projId)
                     projects.append(project)
         else:
             return []
