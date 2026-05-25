@@ -42,17 +42,25 @@ def get_ppms_user_by_id(uid:int, coreid:int):
 def get_ppms_users():
     logger.debug("@get_ppms_users: get all ppms users")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
-    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report1335"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action="
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
-    if response.ok:
-        if response.status_code == 204:
+    response = requests.request('POST', url, headers=headers, data=payload+'Report1335')
+    if not response.ok or response.status_code == 204:
+        return []
+    users = response.json(strict=False)
+    orcids = []
+    for coreid in json.loads(config.get('ppms', 'coreids')):
+        response = requests.request('POST', url, headers=headers, data=payload+f'Report2110&coreid={coreid}')
+        if not response.ok or response.status_code == 204:
             return []
-        else:
-            return response.json(strict=False)
-    return []
+        orcids.extend(response.json(strict=False))
+    orcids_dict = { o['User Login']: o['User ORCID'] for o in orcids if o['User ORCID'] }
+    for user in users:
+        user['orcid'] = orcids_dict.get(user['login'], '')
+    logger.debug('have orcids for %d of %d users', len(orcids_dict), len(users))
+    return users
 
 
 def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.date):

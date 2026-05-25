@@ -45,7 +45,7 @@ def check_all_files_in_dataset(db, dataset, project, logger):
                 file_items.pop(_file_rel_path)
             except:
                 pass
-    logger.debug(f"Left over file items: {file_items}")
+    logger.debug('Left over file items: %s', ','.join(list(file_items)))
     return (len(file_items) == 0)
     
 def ingest_dataset_to_clowder(db, dataset, project, logger):
@@ -54,7 +54,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
     """
     logger.debug(f"@ingest-dataset: Start ingesting datataset {dataset.name} with {len(dataset.files)} files")
     _clowder_key = config.get('clowder', 'api_key')
-    _clowder_api_url = config.get('clowder', 'api_url')
+    _clowder_api_url = config.get('clowder', 'api_url_local')
     _dataset_ingest_successful = True
     _error_message = []
     found = False
@@ -124,7 +124,7 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
     # all files items
     logger.debug("Space and dataset found. Now ingesting files")
     file_items = { file.path.lower():file for file in dataset.files }
-    logger.debug(f"File items in db: {file_items}")
+    logger.debug('File items in db: %s', ','.join(list(file_items)))
     qcollection = project.collection.strip().split("-")[-1]
     # do a walk over: /prefix/QCollection/dataset
     _relpathfromrootcollection = dataset.relpathfromrootcollection.replace("\\", "/")
@@ -227,80 +227,50 @@ def ingest_dataset_to_clowder(db, dataset, project, logger):
                     _error_message.append( f"Exception when ingesting file: {e}" )
                     logger.debug (f">>>Exception at creating file {e}")
     # end for loop
-    logger.debug(f"Done ingesting files, the files items left: {file_items}")
+    logger.debug('Done ingesting files, the files items left: %s', ','.join(list(file_items)))
     if _dataset_ingest_successful:
         _dataset_ingest_successful = (len(file_items) == 0)
         if not _dataset_ingest_successful:
-            _error_message.append( f"Not all files were ingested. Missing: {file_items}" )
+            _error_message.append(f'Not all files were ingested. Missing: {",".join(list(file_items))}')
     return (_dataset_ingest_successful, _error_message)
 
 
 
-def send_email(db, datasetinfo, result, messages):
+def send_email(db, datasetid, result, messages):
     if result:
-        title = f"Successfully ingested dataset"
-        to_address = datasetinfo.user.email
-        # if assistant is present, then sent email to assisant
-        if datasetinfo.booking and datasetinfo.booking.assistant:
-            to_address = pdb.crud.get_ppms_user(db, datasetinfo.booking.assistant).email
-        pitschi_url = f"{config.get('clowder', 'url')}/datasets/{datasetinfo.datasetid}?space={datasetinfo.space}"
-        _relpathfromrootcollection = datasetinfo.relpathfromrootcollection.replace("\\", "/")
-        cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{datasetinfo.project.collection}/{_relpathfromrootcollection}"
-        samba_url = 'smb:' + datasetinfo.networkpath.replace('\\', '/')
-        contents = f"""
-        <html>
-            <head></head>
-            <body>
-                <p>Dear {datasetinfo.user.name},<br /></p>
-                <p>Pitschi has successfully ingested dataset from {datasetinfo.system.name} into the Clowder space for project "{datasetinfo.project.name}".</p>
-
-                <p>You can view the dataset using the following systems (please allow time for synchronization):</p>
-                    <ul>
-                        <li><b>Pitschi</b> <a href="{pitschi_url}">here</a></li>
-                        <li><b>Cloud RDM</b> <a href="{cloud_rdm_url}">here</a></li>
-                        <li><b>Windows</b> Enter this location into File Explorer: <b>{datasetinfo.networkpath}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                        <li><b>MacOS</b> Go to Finder and then on the menu Go-> Connect to Server.... Enter this text: <b>{samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                        <li><b>Linux</b> Enter this location into File Manager (Caja, Nautilus, etc): <b>{samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                        <li><b>CVL</b> Go to collection: <b>{datasetinfo.project.collection.strip().split("-")[-1]}</b> and then {_relpathfromrootcollection}</li>
-                        <li><b>Image Processing Portal</b> <a href="https://ipp.rcc.uq.edu.au/?component=filesmanager&relpath={datasetinfo.project.collection.strip().split("-")[-1]}/{_relpathfromrootcollection}">here</a></li>
-                    </ul>
-                </p>
-                Regards,<br />
-                Pitschi Team
-            </body>
-        </html>
-        """
+        mail.send_mail(subject='Successfully ingested dataset to Pitschi', template='ingest', info=pdb.crud.get_dataset_mail_info(db, datasetid))
     else:
-        title = f"Problem ingesting dataset"
-        to_address = config.get('email', 'address')
-        contents = f"""
+        title = 'Problem ingesting dataset'
+        to_addr = config.get('email', 'address')
+        dataset = pdb.crud.get_dataset(db, datasetid)
+        booking = pdb.crud.get_booking(db, dataset.bookingid)
+        contents = f'''
         <html>
             <head></head>
             <body>
                 <p>Dear admins<br /></p>
                 <p>The following dataset failed to ingest:</p>
                 <ul>
-                    <li><b>Machine</b> {datasetinfo.originalmachine}</li>
-                    <li><b>Location</b> {datasetinfo.originalpath}</li>
-                    <li><b>Booking id:</b> {datasetinfo.booking.id}</li>
-                    <li><b>system id:</b> {datasetinfo.booking.systemid}</li>
-                    <li><b>username:</b> {datasetinfo.booking.username}</li>
-                    <li><b>project id:</b> {datasetinfo.booking.projectid}</li>
+                    <li><b>Machine</b> {dataset.originalmachine}</li>
+                    <li><b>Location</b> {dataset.originalpath}</li>
+                    <li><b>Booking id:</b> {booking.id}</li>
+                    <li><b>system id:</b> {booking.systemid}</li>
+                    <li><b>username:</b> {booking.username}</li>
+                    <li><b>project id:</b> {booking.projectid}</li>
                 </ul>
                 <p> Reasons: </p>
                 <ul>
-        """
+        '''
         for message in messages:
-            contents = f"""{contents}<li>{message}</li>"""
-        contents = f"""{contents}
+            contents = f'{contents}<li>{message}</li>'
+        contents = f'''{contents}
                         </ul>
                             </p>
                             Regards,
                         </body>
                     </html>
-                    """
-
-    mail.send_mail(to_address, title, contents)
+                    '''
+        mail.send_mail(to_addr=to_addr, subject=title, contents=contents)
 
 
 # every half hour
@@ -339,9 +309,7 @@ def ingest() -> None:
                     (result, messages) = ingest_dataset_to_clowder(db, _dataset, _project, logger)
                     logger.debug(f"Done ingesting, result: {result} \n messages: {messages}")
                     # send an email
-                    _dataset_info = pdb.crud.summarize_dataset_info(db, _dataset.id)
-                    if _dataset_info:
-                        send_email(db, _dataset_info, result, messages)
+                    send_email(db, _dataset.id, result, messages)
                     if result:
                         # success
                         pdb.crud.update_dataset_mode_status(db, _dataset.id, pdb.models.Mode.ingested, pdb.models.Status.success)

@@ -138,6 +138,7 @@ class User(Base):
     userid = Column(Integer, primary_key=False, index=False, nullable=True)
     name = Column(String, primary_key=False, index=False, nullable=False)
     email = Column(String, primary_key=False, index=False, nullable=False)
+    orcid = Column(String, primary_key=False, index=False, nullable=False)
     projects = relationship("UserProject", back_populates="user")    
 
 

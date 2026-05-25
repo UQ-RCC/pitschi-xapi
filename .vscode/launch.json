@@ -4,7 +4,18 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "env": {
+                "PITSCHI_XAPI_CONFIG": "${workspaceFolder}/run/etc/pitschixapi.conf",
+                "NAME": "pitschixapi",
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
         {
             "name": "Python Debugger: FastAPI",
             "type": "debugpy",
@@ -15,7 +26,7 @@
                 "HOST": "localhost",
                 "NAME": "pitschixapi"
             },
-            "args": [ "pitschi.main:pitschixapi", "--host", "0.0.0.0", "--port", "8080", "--root-path", "--reload" ]
+            "args": [ "pitschi.main:pitschixapi", "--host", "0.0.0.0", "--port", "8080", "--reload" ]
         }
     ]
 }

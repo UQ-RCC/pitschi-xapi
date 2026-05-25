@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
-
+import json
 import logging
-import datetime 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import pitschi.db as pdb
+import pitschi.config as config
 from sqlalchemy.orm import Session
 
 
@@ -95,3 +96,20 @@ async def get_systems( systemid: int,
         return {}
     ror = pdb.crud.get_system_ror(db, systemid)
     return { 'id': system.id, 'coreid': system.coreid, 'type': system.type, 'name': system.name, 'pid': system.pid, 'ror': ror }
+
+@router.get('/cores')
+async def get_cores(coreid: int = None,
+        credentials: HTTPBasicCredentials = Depends(security),\
+        db: Session = Depends(pdb.get_db)):
+    user = pdb.crud.get_user(db, credentials.username, credentials.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Incorrect email or password',
+            headers={'WWW-Authenticate': 'Basic'},
+        )
+    if coreid is None:
+        logger.debug('querying all cores')
+        return [pdb.crud.get_core(db, c) for c in json.loads(config.get('ppms', 'coreids'))]
+    logger.debug('querying cored %d', coreid)
+    return pdb.crud.get_core(db, coreid)

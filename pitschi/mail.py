@@ -26,14 +26,26 @@ def connect_smtp():
         connection.login(username, passwd)
     return connection
 
-def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc_sender=True):
-    """
+def send_mail(to_addr=None, subject=None, contents=None, template=None, info={}, subtype='html', to_sender=False, cc_sender=True):
+    '''
     Send email
-    """
+      contents: email body if template not set
+      template: generate email body using template from config and info
+    '''
     ### create connectoin first
     ### try 3 times
+    if not to_addr:
+        to_addr = info.get('to')
+    if not subject:
+        subject = info.get('subject')
+    if not (to_addr and subject):
+        return
+    if template:
+        contents = config.get('templates', template, default=None).format(**info)
+    if not contents:
+        return
     if config.get('email', 'enabled', default='True').lower() == 'false':
-        logger.info(f'send_mail to: {to_address}, subj: {subject}')
+        logger.info('send_mail to: %s, subj: %s', to_addr, subject)
         return
     connected = False
     attempts = 0
@@ -43,9 +55,9 @@ def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc
             connection = connect_smtp()
             connected = True
         except Exception as e:
-            logger.error(f"Problem with create smtp connection: {str(e)}")
+            logger.error('problem creating smtp connection: %s', str(e))
             if attempts < 3:
-                logger.debug("Try connecting to smtp server again...")
+                logger.debug('retrying smtp server connection...')
                 time.sleep(3)
             else:
                 raise
@@ -58,16 +70,16 @@ def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc
         sender_aliases = [sender]
         if sender.endswith('@rcc.uq.edu.au'):
             sender_aliases.append(sender.split('@')[0] + '@uq.edu.au')
-        for addr in to_address.split(','):
+        for addr in to_addr.split(','):
             if addr in sender_aliases:
                 # if already to sender, don't add sender
                 to_sender = False
                 cc_sender = False
                 break
         if to_sender:
-            email['To'] = to_address+','+sender
+            email['To'] = to_addr+','+sender
         else:
-            email['To'] = to_address
+            email['To'] = to_addr
         if cc_sender:
             email['Cc'] = sender
         email.set_content(contents, subtype=subtype)
@@ -77,15 +89,15 @@ def send_mail(to_address, subject, contents, subtype='html', to_sender=False, cc
         connection.close()
 
 def main(argv):
-    """
+    '''
     main method
-    """
+    '''
     print(config.get('email', 'address'))
     print(config.get('email', 'user'))
     print(config.get('email', 'password'))
     
-    you = "xxxx"
-    contents = """
+    you = 'xxxx'
+    contents = '''
     <html>
         <head></head>
         <body>
@@ -99,7 +111,7 @@ def main(argv):
             </p>
         </body>
         </html>
-    """
-    send_mail(you, 'This is another test', contents)
+    '''
+    send_mail(to_addr=you, subject='This is another test', contents=contents)
 if __name__ == '__main__':
     main([])    

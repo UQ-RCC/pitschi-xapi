@@ -11,9 +11,11 @@ logger = logging.getLogger('pitschixapi')
 security = HTTPBasic()
 
 class Mail(BaseModel):
-    to_addr: str
-    subject: str
-    contents: str
+    to_addr: str = ''
+    subject: str = ''
+    contents: str = ''
+    template: str = ''
+    info: dict[str, str] = {}
 
 @router.post("/notification/mail")
 async def send_mail(msg: Mail, credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(pdb.get_db)):
@@ -29,4 +31,4 @@ async def send_mail(msg: Mail, credentials: HTTPBasicCredentials = Depends(secur
             headers={"WWW-Authenticate": "Basic"},
         )
     logger.info(f'mailto: {msg.to_addr}, subject: {msg.subject}, username: {credentials.username}')
-    mail.send_mail(msg.to_addr, msg.subject, msg.contents)
+    mail.send_mail(to_addr=msg.to_addr, subject=msg.subject, contents=msg.contents, template=msg.template, info=msg.info)

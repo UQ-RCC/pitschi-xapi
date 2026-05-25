@@ -151,6 +151,7 @@ class User(BaseModel):
     name: str
     userid: Optional[int] = None
     email: str
+    orcid: str
     projects: List[UserProjectBase] = []
     class Config:
         orm_mode = True

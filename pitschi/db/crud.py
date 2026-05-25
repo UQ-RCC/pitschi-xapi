@@ -156,48 +156,9 @@ def create_dataset(db: Session, dataset: schemas.DatasetCreate):
     if dataset.mode == models.Mode.imported and dataset.status == models.Status.success:
         # send email
         logger.debug("Send email about the import")
-        _dataset_info = summarize_dataset_info(db, datasetModel.id)
-        if _dataset_info:
-            send_import_email(db, _dataset_info)
+        mail.send_mail(subject='Successfully imported dataset to RDM', template='import', info=get_dataset_mail_info(db, datasetModel.id))
     return datasetModel
 
-
-def send_import_email(db, _dataset_info):
-    """
-    send an import email
-    """
-    _title = f"Successfully imported dataset to RDM"
-    _to_address = _dataset_info.user.email
-    # if this dataset is a result of a assistance
-    if _dataset_info.booking and _dataset_info.booking.assistant:
-        _to_address = get_ppms_user(db, _dataset_info.booking.assistant).email
-    _cloud_rdm_url=f"https://cloud.rdm.uq.edu.au/index.php/apps/files/?dir=/{_dataset_info.project.collection}/{_dataset_info.relpathfromrootcollection}"
-    _samba_url = 'smb:' + _dataset_info.networkpath.replace('\\', '/')
-    _contents = f"""
-                <html>
-                    <head></head>
-                    <body>
-                        <p>Dear {_dataset_info.user.name},<br /></p>
-                        <p>Pitschi has successfully imported dataset from {_dataset_info.system.name} into RDM {_dataset_info.project.collection} for project "{_dataset_info.project.name}".</p>
-
-                        <p>You can view the dataset using the following systems (please allow time for synchronization):</p>
-                            <ul>
-                                <li><b>Cloud RDM</b> <a href="{_cloud_rdm_url}">here</a>.</li>
-                                <li><b>Windows</b> Enter this text into File Explorer: <b>{_dataset_info.networkpath}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                                <li><b>MacOS</b> Go to Finder and then on the menu Go-> Connect to Server.... Enter this text: <b>{_samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                                <li><b>Linux</b> Enter this text into File Manager (Caja, Nautilus, etc): <b>{_samba_url}</b>. Please use your UQ username (eg: uq\\uqxxxxxx) and password.</li>
-                                <li><b>CVL</b> Look for collection: <b>{_dataset_info.project.collection.strip().split("-")[-1]}</b> and then {_dataset_info.relpathfromrootcollection}</li>
-                                <li><b>Image Processing Portal</b> <a href="https://ipp.rcc.uq.edu.au/?component=filesmanager&relpath={_dataset_info.project.collection.strip().split("-")[-1]}/{_dataset_info.relpathfromrootcollection}">here</a></li>
-                            </ul>
-                        </p>
-                        You will receive another email once the dataset has been successfully ingested into Pitschi.
-                        <br />
-                        Regards,<br />
-                        Pitschi Team
-                    </body>
-                </html>
-                """
-    mail.send_mail(_to_address, _title, _contents)
 
 def create_file(db: Session, file: schemas.FileCreate):
     if file.received:
@@ -305,15 +266,16 @@ def update_dataset(db: Session, datasetid: int , dataset: schemas.DatasetCreate)
             dataset.mode == models.Mode.imported and dataset.status == models.Status.success:
             # send email
             logger.debug("Send email about the import")
-            _dataset_info = summarize_dataset_info(db, datasetid)
-            if _dataset_info:
-                send_import_email(db, _dataset_info)
+            mail.send_mail(subject='Successfully imported dataset to RDM', template='import', info=get_dataset_mail_info(db, datasetid))
 
         
 ############# ppms
-def get_core(db: Session, coreid: int):
+def get_core(db: Session, coreid: int = None):
+    if coreid is None:
+        return db.query(models.Core).\
+            filter(models.Core.id.in_())
     return db.query(models.Core).\
-            filter(models.Core.id == coreid).first()
+        filter(models.Core.id == coreid).first()
 
 def create_core(db: Session, core: schemas.Core):
     """
@@ -661,29 +623,55 @@ def get_booking_datasets(db: Session, bookingid: int):
             all()
 
 
-def summarize_dataset_info(db: Session, datasetid: int):
+def get_dataset_mail_info(db: Session, datasetid: int):
     dataset = get_dataset(db, datasetid)
-    if dataset:
-        booking = get_booking(db, dataset.bookingid)
-        if booking:
-            dataset.booking = booking
-            dataset.user = get_ppms_user(db, booking.username)
-            if not dataset.user:
-                logger.error(f'booking user not found: dataset id {datasetid}, booking id {booking.id}')
-                return None
-            dataset.system = get_system(db, booking.systemid)
-            if not dataset.system:
-                logger.error(f'booking system not found: dataset id {datasetid}, booking id {booking.id}')
-                return None
-            dataset.project = get_project(db, booking.projectid)
-            if not dataset.project:
-                logger.error(f'booking project found: dataset id {datasetid}, booking id {booking.id}')
-                return None
-        else:
-            logger.error(f'booking not found: dataset id {datasetid}')
-            return None
-    return dataset
-
+    if not dataset:
+        logger.error('dataset not found: dataset id %s', datasetid)
+        return None
+    booking = get_booking(db, dataset.bookingid)
+    if not booking:
+        logger.error('booking not found: dataset id %s', datasetid)
+    user = get_ppms_user(db, booking.username)
+    if not user:
+        logger.error('booking user not found: dataset id %s', datasetid)
+        return None
+    system = get_system(db, booking.systemid)
+    if not system:
+        logger.error('booking system not found: dataset id %s', datasetid)
+        return None
+    project = get_project(db, booking.projectid)
+    if not project:
+        logger.error('booking project not found: dataset id %s', datasetid)
+        return None
+    core = get_core(db, project.coreid)
+    if not core:
+        logger.error('project core found: dataset id %s', datasetid)
+        return None
+    dataset_mnt = dataset.networkpath
+    dataset_pth = dataset.relpathfromrootcollection
+    rdm_mnt = dataset_mnt[:-len(dataset_pth)].rstrip('/\\')
+    is_smb = dataset_mnt.startswith('//')
+    return {
+        'to': get_ppms_user(db, booking.assistant).email if booking.assistant else user.email,
+        'user_name': user.name,
+        'user_orcid': user.orcid if user.orcid else 'NA',
+        'project_name': project.name,
+        'collection': project.collection,
+        'dataset_name': dataset.name,
+        'dataset_mnt_smb': 'smb:' + (dataset_mnt if is_smb else dataset_mnt.replace('\\', '/')),
+        'dataset_pth_smb': dataset_pth if is_smb else dataset_pth.replace('\\', '/'),
+        'rdm_mnt_smb': 'smb:' + (rdm_mnt if is_smb else rdm_mnt.replace('\\', '/')),
+        'dataset_mnt_win': dataset_mnt.replace('/', '\\') if is_smb else dataset_mnt,
+        'dataset_pth_win': dataset_pth.replace('/', '\\') if is_smb else dataset_pth,
+        'rdm_mnt_win': rdm_mnt.replace('/', '\\') if is_smb else rdm_mnt,
+        'system_name': system.name,
+        'system_pid': system.pid if system.pid else 'NA',
+        'core_name': core.longname,
+        'core_rorid': core.rorid if core.rorid else 'NA',
+        'clowder_url': config.get('clowder', 'url'),
+        'clowder_dataset': dataset.datasetid if dataset.datasetid else 'NA',
+        'clowder_space': dataset.space if dataset.space else 'NA'
+    }
 
 
 ######### collection and cache

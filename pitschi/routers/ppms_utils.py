@@ -32,13 +32,13 @@ def de_dup_userid(db: Session, login: str, userid: int, users_info: dict, alert:
                 pdb.crud.update_ppms_user_id(db, _fix_user.username, _usr.get('id'))
                 if (alert):
                     contents = msg[:1].upper() + msg[1:] + ', was username changed in RIMS?'
-                    mail.send_mail(config.get('email', 'address'), '[WARNING] RIMS sync duplicate userid', contents)
+                    mail.send_mail(to_addr=config.get('email', 'address'), subject='[WARNING] RIMS sync duplicate userid', contents=contents)
             else:
                 msg = f'User {_fix_user.username} has duplicate id {userid}'
                 logger.error(msg)
                 if (alert):
                     contents = msg + ', was username deleted in RIMS?'
-                    mail.send_mail(config.get('email', 'address'), '[ERROR] RIMS sync duplicate userid', contents)
+                    mail.send_mail(to_addr=config.get('email', 'address'), subject='[ERROR] RIMS sync duplicate userid', contents=contents)
 
 
 def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int = None, users_info: dict = None, alert: bool = False):
@@ -62,7 +62,7 @@ def get_db_user(db: Session, login: str = None, userid: int = None, coreid: int 
     if not _usr:
         # don't have any user info from RIMS
         return None
-    _user_schema = pdb.schemas.User(username=_usr.get('login'), userid=_usr.get('id'), name=_usr.get('name'), email=_usr.get('email'))
+    _user_schema = pdb.schemas.User(username=_usr.get('login'), userid=_usr.get('id'), name=_usr.get('name'), email=_usr.get('email'), orcid=_usr.get('orcid'))
     _db_user = pdb.crud.create_ppms_user(db, _user_schema)
     de_dup_userid(db, _db_user.username, _usr.get('id'), users_info, alert=alert)
     return _db_user
@@ -89,7 +89,7 @@ def notify_failed_datasets(db: Session, alert: bool = False):
             for ds in ingest_fails:
                 contents += f'<li>{ds["name"]}: booking {ds["booking"]}, on {ds["machine"]}</li>'
             contents += '</ul>'
-            mail.send_mail(config.get('email', 'address'), '[WARNING] Dataset import/ingest fails', contents)
+            mail.send_mail(to_addr=config.get('email', 'address'), subject='[WARNING] Dataset import/ingest fails', contents=contents)
     else:
         logger.info(f'No datasets failed in past {days} day/s')
 
@@ -114,8 +114,8 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
     users = get_ppms_users()
     _rdms_by_pid = { r['projectid']: r['rdm'] for r in get_rdm_collections() }
     # convert to dict to allow easy lookup by login
-    _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"] } for u in users }
-    _users_info_by_id = { u["id"]: { "login": u["login"], "email": u["email"], "name": u["name"] } for u in users }
+    _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"], "orcid": u["orcid"] } for u in users }
+    _users_info_by_id = { u["id"]: { "login": u["login"], "email": u["email"], "name": u["name"], "orcid": u["orcid"] } for u in users }
     _projects_by_id = {p['ProjectRef']: {k: v for k, v in p.items() if k != 'ProjectRef'} for p in get_projects()}
     if len(project_ids) > 0:
         # partial project sync
