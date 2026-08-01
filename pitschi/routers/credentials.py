@@ -27,7 +27,10 @@ async def get_encypted_creds(field: str, credentials: HTTPBasicCredentials = Dep
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
-    return config.get('creds', field)
+    sect = 'creds'
+    if user.creds_grp:
+        sect = f'{sect}.{user.creds_grp}'
+    return config.get(sect, field)
 
 @router.get("/creds_oidc/{field}")
 async def get_encypted_creds_oidc(field: str, user: dict = Depends(keycloak.decode)):

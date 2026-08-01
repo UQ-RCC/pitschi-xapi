@@ -22,6 +22,7 @@ class SystemStats(BaseModel):
 class PUser(BaseModel):
     username: str
     password: str
+    creds_grp: str
     desc: str
 
     class Config:

@@ -39,6 +39,7 @@ class PUser(Base):
     __tablename__ = 'puser'
     username = Column(String, unique=True, primary_key=True, index=True, nullable=False)
     password = Column(String, unique=False, primary_key=False, index=False, nullable=False)
+    creds_grp = Column(String, unique=False, primary_key=False, index=False, nullable=True)
     desc = Column(String, unique=False, primary_key=False, index=False, nullable=True)
 
 class Dataset(Base):
