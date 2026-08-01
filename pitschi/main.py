@@ -2,6 +2,7 @@ import logging
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_utils.session import FastAPISessionMaker
 
 from .routers import clowder, ppms, user, scheduledingest, credentials
 from .routers import sync_ppms_bookings, sync_ppms_projects, mail, dailytask
@@ -11,7 +12,8 @@ from .routers.dashboard import projects, collections, cache, admin, dataset
 import pitschi.config as config
 from logging.handlers import TimedRotatingFileHandler
 
-import pitschi.keycloak as keycloak
+from pitschi import keycloak, utils
+import pitschi.db as pdb
 
 logger = logging.getLogger('pitschixapi')
 logger.setLevel(logging.DEBUG)
@@ -147,6 +149,11 @@ pitschixapi.include_router(
     responses={404: {"description": "Not found"}},
 )
 
+with FastAPISessionMaker(utils.get_db_connection()).context_session() as db:
+    _syncing_stat = pdb.crud.get_stat(db, 'syncing_projects')
+    if _syncing_stat and eval(_syncing_stat.value):
+        logger.debug("resetting syncing_projects")
+        pdb.crud.set_stat(db, name='syncing_projects', value='False')
 
 
 logger.info("Start xapi")
