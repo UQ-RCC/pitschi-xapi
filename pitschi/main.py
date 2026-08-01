@@ -89,6 +89,11 @@ pitschixapi.include_router(
 # scheduledtasks
 if config.get('ppms', 'syncing_ppms_project', default = "no") == "yes":
     logger.debug("Syncing project on")
+    with FastAPISessionMaker(utils.get_db_connection()).context_session() as db:
+        _syncing_stat = pdb.crud.get_stat(db, 'syncing_projects')
+        if _syncing_stat and eval(_syncing_stat.value):
+            logger.debug("resetting syncing_projects")
+            pdb.crud.set_stat(db, name='syncing_projects', value='False')
     pitschixapi.include_router(
         sync_ppms_projects.router
     )
@@ -148,12 +153,5 @@ pitschixapi.include_router(
     tags=["dashboard"],
     responses={404: {"description": "Not found"}},
 )
-
-with FastAPISessionMaker(utils.get_db_connection()).context_session() as db:
-    _syncing_stat = pdb.crud.get_stat(db, 'syncing_projects')
-    if _syncing_stat and eval(_syncing_stat.value):
-        logger.debug("resetting syncing_projects")
-        pdb.crud.set_stat(db, name='syncing_projects', value='False')
-
 
 logger.info("Start xapi")
