@@ -6,13 +6,15 @@ import pitschi.config as config
 
 logger = logging.getLogger('pitschixapi')
 
+RIMS_TMO = 60
+
 def get_ppms_user(login):
     url = f"{config.get('ppms', 'ppms_url')}pumapi/"
     payload=f"apikey={config.get('ppms', 'ppms_key')}&action=getuser&login={login}&format=json"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             raise Exception('Not found')
@@ -30,7 +32,7 @@ def get_ppms_user_by_id(uid:int, coreid:int):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -46,13 +48,13 @@ def get_ppms_users():
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request('POST', url, headers=headers, data=payload+'Report1335')
+    response = requests.request('POST', url, headers=headers, data=payload+'Report1335', timeout=RIMS_TMO)
     if not response.ok or response.status_code == 204:
         return []
     users = response.json(strict=False)
     orcids = []
     for coreid in json.loads(config.get('ppms', 'coreids')):
-        response = requests.request('POST', url, headers=headers, data=payload+f'Report2110&coreid={coreid}')
+        response = requests.request('POST', url, headers=headers, data=payload+f'Report2110&coreid={coreid}', timeout=RIMS_TMO)
         if not response.ok or response.status_code == 204:
             return []
         orcids.extend(response.json(strict=False))
@@ -71,7 +73,7 @@ def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.dat
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -88,7 +90,7 @@ def get_daily_bookings_by_coreid(coreid:int, date: datetime.date):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -113,7 +115,7 @@ def get_booking_details(coreid:int , sessionid: int):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -130,7 +132,7 @@ def get_daily_training_by_coreid(coreid:int, date: datetime.date):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -156,7 +158,7 @@ def get_cores():
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code != 204:
             cores = response.json(strict=False)
@@ -173,7 +175,7 @@ def get_system_pids():
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code != 204:
             pids = response.json(strict=False)
@@ -191,7 +193,7 @@ def get_systems():
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code != 204:
             # format is in csv
@@ -219,7 +221,7 @@ def get_system_rights(systemid: int):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return {}
@@ -246,7 +248,7 @@ def get_projects():
     # only add shared projects with coreid on first occurrence
     projects, sharedProjs = [], []
     for coreid in coreids:
-        response = requests.request("POST", url, headers=headers, data=payload.format(coreid=coreid))
+        response = requests.request("POST", url, headers=headers, data=payload.format(coreid=coreid), timeout=RIMS_TMO)
         if response.ok:
             if response.status_code == 204:
                 return []
@@ -275,7 +277,7 @@ def get_project_user(projectid: int):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -295,7 +297,7 @@ def get_project_members(projectid: int):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return []
@@ -320,7 +322,7 @@ def get_rdm_collection(coreid: int, projectid: int):
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
     if response.ok:
         if response.status_code == 204:
             return ""
@@ -343,7 +345,7 @@ def get_rdm_collections(coreid: int = None):
     logger.debug(f'get rdm collections for core ids: {",".join(str(c) for c in coreids)}')
     for coreid in coreids:
         payload = f"apikey={config.get('ppms', 'api2_key')}&action={action}&coreid={coreid}&outformat=json"
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = requests.request("POST", url, headers=headers, data=payload, timeout=RIMS_TMO)
         if response.ok:
             if response.status_code == 204:
                 break
