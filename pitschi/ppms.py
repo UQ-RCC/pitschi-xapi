@@ -45,16 +45,19 @@ def get_ppms_users():
     logger.debug("@get_ppms_users: get all ppms users")
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action="
+    coreids = json.loads(config.get('ppms', 'coreids'))
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
-    response = requests.request('POST', url, headers=headers, data=payload+'Report1335', timeout=RIMS_TMO)
+    action = config.get('ppms', 'users_action')
+    response = requests.request('POST', url, headers=headers, data=f'{payload}{action}&coreid={coreids[0]}', timeout=RIMS_TMO)
     if not response.ok or response.status_code == 204:
         return []
     users = response.json(strict=False)
+    action = config.get('ppms', 'userids_action')
     orcids = []
-    for coreid in json.loads(config.get('ppms', 'coreids')):
-        response = requests.request('POST', url, headers=headers, data=payload+f'Report2110&coreid={coreid}', timeout=RIMS_TMO)
+    for coreid in coreids:
+        response = requests.request('POST', url, headers=headers, data=f'{payload}{action}&coreid={coreid}', timeout=RIMS_TMO)
         if not response.ok or response.status_code == 204:
             return []
         orcids.extend(response.json(strict=False))
@@ -84,9 +87,10 @@ def get_daily_bookings_one_system(coreid: int, systemid: int, date: datetime.dat
 
 def get_daily_bookings_by_coreid(coreid:int, date: datetime.date):
     logger.debug("@get_daily_bookings: get bookings for given date")
+    action=config.get('ppms', 'booking_query')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
-    payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'booking_query')}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
+    payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={action}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -126,9 +130,10 @@ def get_booking_details(coreid:int , sessionid: int):
 
 def get_daily_training_by_coreid(coreid:int, date: datetime.date):
     logger.debug("@get_daily_training: get training for given date")
+    action = config.get('ppms', 'training_query')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
     datestr = f"{date.strftime('%Y-%m-%d')}"
-    payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'training_query')}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
+    payload=f"dateformat=print&outformat=json&apikey={config.get('ppms', 'api2_key')}&action={action}&startdate={datestr}&enddate={datestr}&coreid={coreid}"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -152,9 +157,10 @@ def get_daily_training(date: datetime.date):
 
 def get_cores():
     coreids = json.loads(config.get('ppms', 'coreids'))
+    action = config.get('ppms', 'cores_action')
     logger.debug(f'get cores for core ids: {",".join(str(c) for c in coreids)}')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
-    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report2169"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action={action}&coreid={coreids[0]}"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -170,8 +176,10 @@ def get_cores():
 
 def get_system_pids():
     logger.debug(f'get all system pids')
+    action = config.get('ppms', 'systems_action')
+    coreids = json.loads(config.get('ppms', 'coreids'))
     url = f"{config.get('ppms', 'ppms_url')}API2/"
-    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action=Report2168"
+    payload=f"outformat=json&apikey={config.get('ppms', 'api2_key')}&action={action}&coreid={coreids[0]}"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -317,8 +325,9 @@ def get_project_members(projectid: int):
         return []
 
 def get_rdm_collection(coreid: int, projectid: int):
+    action = config.get('ppms', 'qcollection_action')
     url = f"{config.get('ppms', 'ppms_url')}API2/"
-    payload=f"apikey={config.get('ppms', 'api2_key')}&action={config.get('ppms', 'qcollection_action')}&projectId={projectid}&coreid={coreid}&outformat=json"
+    payload=f"apikey={config.get('ppms', 'api2_key')}&action={action}&projectId={projectid}&coreid={coreid}&outformat=json"
     headers = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
