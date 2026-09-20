@@ -604,6 +604,18 @@ def update_project_name(db: Session, id: int, name: str):
         db.flush()
         db.commit()
 
+def update_projects_inactive(db: Session, projectids: list):
+    active_prjs = db.query(models.Project).\
+        filter(models.Project.active).\
+        filter(models.Project.id.in_(projectids))
+    if active_prjs.count() > 0:
+        logger.debug(f'updating project ids to inactive: {",".join([str(prj.id) for prj in active_prjs])}')
+        active_prjs.update({"active": False})
+        db.flush()
+        db.commit()
+    else:
+        logger.debug('no projects updated to inactive')
+
 def get_imported_success_datasets(db: Session):
     return db.query(models.Dataset).\
             filter(models.Dataset.mode == models.Mode.imported).\

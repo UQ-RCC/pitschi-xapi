@@ -359,5 +359,5 @@ def get_rdm_collections(coreid: int = None):
             if response.status_code == 204:
                 break
             if len(response.json()) > 0:
-                rdms.extend([{ 'coreid': r['PlateformID'], 'projectid': r['ProjectRef'], 'rdm': r[rdm_key] } for r in response.json()])
+                rdms.extend([{ 'coreid': r['PlateformID'], 'projectid': r['ProjectRef'], 'active': r['Active'], 'rdm': r[rdm_key] } for r in response.json()])
     return rdms

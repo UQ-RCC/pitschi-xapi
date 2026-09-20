@@ -112,7 +112,9 @@ def sync_projects(db: Session, project_ids: dict = {}, alogger: logging.Logger =
     - otherwise just sync the projects in projects_ids
     '''
     users = get_ppms_users()
-    _rdms_by_pid = { r['projectid']: r['rdm'] for r in get_rdm_collections() }
+    rdm_collections = get_rdm_collections()
+    _rdms_by_pid = { r['projectid']: r['rdm'] for r in rdm_collections }
+    pdb.crud.update_projects_inactive(db, [r['projectid'] for r in rdm_collections if r['active'] is False])
     # convert to dict to allow easy lookup by login
     _users_info = { u["login"]: { "id": u["id"], "email": u["email"], "name": u["name"], "orcid": u["orcid"] } for u in users }
     _users_info_by_id = { u["id"]: { "login": u["login"], "email": u["email"], "name": u["name"], "orcid": u["orcid"] } for u in users }
