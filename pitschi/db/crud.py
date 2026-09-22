@@ -610,7 +610,7 @@ def update_projects_inactive(db: Session, projectids: list):
         filter(models.Project.id.in_(projectids))
     if active_prjs.count() > 0:
         logger.debug(f'updating project ids to inactive: {",".join([str(prj.id) for prj in active_prjs])}')
-        active_prjs.update({"active": False})
+        active_prjs.update({models.Project.active: False}, synchronize_session='fetch')
         db.flush()
         db.commit()
     else:
